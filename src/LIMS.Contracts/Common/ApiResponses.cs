@@ -1,0 +1,7 @@
+namespace LIMS.Contracts.Common;
+
+public sealed record PagedResponse<T>(
+    IReadOnlyCollection<T> Items,
+    int PageNumber,
+    int PageSize,
+    long TotalCount);
