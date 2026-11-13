@@ -1,5 +1,4 @@
 using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Abstractions.Messaging;
 using LIMS.Domain.Requests.Enums;
 using LIMS.Domain.Samples.Enums;
 

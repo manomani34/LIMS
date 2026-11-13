@@ -1,6 +1,5 @@
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Inventory.Commands;
-using LIMS.Application.Abstractions.Validation;
 
 namespace LIMS.Application.Inventory.Validators;
 

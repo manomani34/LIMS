@@ -9,10 +9,13 @@ public sealed class AssignExperimentCommandValidator
     public AssignExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
 
         RuleFor(x => x.UserId)
-            .NotEmpty("UserId is required.")
-            .MaximumLength(150, "UserId cannot exceed 150 characters.");
+            .NotEmpty()
+            .WithMessage("UserId is required.")
+            .MaximumLength(150)
+            .WithMessage("UserId cannot exceed 150 characters.");
     }
 }

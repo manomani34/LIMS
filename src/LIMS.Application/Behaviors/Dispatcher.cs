@@ -43,6 +43,10 @@ public sealed class Dispatcher : IDispatcher
     {
         ArgumentNullException.ThrowIfNull(query);
 
+        await _validationService.ValidateAsync(
+            query,
+            cancellationToken);
+
         var handler = _serviceProvider.GetRequiredService<
             IQueryHandler<TQuery, TResult>>();
 

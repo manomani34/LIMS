@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Instruments.Enums;
 
 namespace LIMS.Application.Instruments.DTOs;
@@ -13,6 +14,7 @@ public sealed record InstrumentDto(
     string? Model,
     string? SerialNumber,
     string? Location,
+    string? Description,
     DateTimeOffset RegisteredAt,
     DateTimeOffset UpdatedAt,
     DateTimeOffset? RetiredAt);

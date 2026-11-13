@@ -39,7 +39,9 @@ public sealed class SampleWorkflowTests
     {
         var sample = CreateSample();
 
-        sample.Reject(Now);
+
+        sample.Reject("Sample rejected for testing.", Now);
+
 
         Assert.Throws<SampleDomainException>(() =>
             sample.AssignTo("user-001", Now.AddMinutes(1)));
@@ -50,7 +52,9 @@ public sealed class SampleWorkflowTests
     {
         var sample = CreateSample();
 
-        sample.Reject(Now);
+
+        sample.Reject("Sample rejected for testing.", Now);
+
         sample.Archive(Now.AddMinutes(1));
 
         Assert.Throws<SampleDomainException>(() =>
@@ -62,7 +66,9 @@ public sealed class SampleWorkflowTests
     {
         var sample = CreateSample();
 
-        sample.Reject(Now);
+
+        sample.Reject("Sample rejected for testing.", Now);
+
         sample.Archive(Now.AddMinutes(1));
 
         Assert.Throws<SampleDomainException>(() =>
@@ -74,7 +80,9 @@ public sealed class SampleWorkflowTests
     {
         var sample = CreateSample();
 
-        sample.Reject(Now);
+
+        sample.Reject("Sample rejected for testing.", Now);
+
         sample.Archive(Now.AddMinutes(1));
 
         var archivedAt = sample.ArchivedAt;

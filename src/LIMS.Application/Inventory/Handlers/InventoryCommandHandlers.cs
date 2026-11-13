@@ -1,12 +1,11 @@
+
+using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Inventory.Commands;
 using LIMS.Application.Inventory.Repositories;
 using LIMS.Application.Laboratories.Interfaces;
 using LIMS.Domain.Inventory;
-using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Laboratories.Interfaces;
 
 namespace LIMS.Application.Inventory.Handlers;
 
@@ -50,6 +49,8 @@ public sealed class CreateInventoryItemCommandHandler
                 $"Inventory item code '{command.ItemCode}' already exists.");
         }
 
+        var now = _dateTimeProvider.UtcNow.UtcDateTime;
+
         var item = InventoryItem.Create(
             command.LaboratoryId,
             command.ItemCode,
@@ -63,7 +64,7 @@ public sealed class CreateInventoryItemCommandHandler
             command.SafetyDataSheetReference,
             command.DefaultUnit,
             command.MinimumStockLevel,
-            _dateTimeProvider.UtcNow);
+            now);
 
         await _repository.AddAsync(item, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -93,7 +94,7 @@ public sealed class UpdateInventoryItemCommandHandler
         UpdateInventoryItemCommand command,
         CancellationToken cancellationToken = default)
     {
-        var item = await _repository.GetByIdAsync(
+        var item = await _repository.GetWithDetailsAsync(
             command.InventoryItemId,
             cancellationToken);
 
@@ -111,7 +112,7 @@ public sealed class UpdateInventoryItemCommandHandler
             command.SafetyDataSheetReference,
             command.DefaultUnit,
             command.MinimumStockLevel,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -163,7 +164,7 @@ public sealed class ReceiveInventoryStockCommandHandler
             command.PerformedByUserId,
             command.ReferenceNumber,
             command.Notes,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -200,13 +201,16 @@ public sealed class ConsumeInventoryStockCommandHandler
         if (item is null)
             return false;
 
+        var now = _dateTimeProvider.UtcNow.UtcDateTime;
+
         item.ConsumeStock(
             command.LotId,
             command.Quantity,
             command.ConsumedByUserId,
             command.ExperimentId,
             command.Notes,
-            _dateTimeProvider.UtcNow);
+            DateOnly.FromDateTime(now),
+            now);
 
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -249,7 +253,7 @@ public sealed class AdjustInventoryStockCommandHandler
             command.Increase,
             command.PerformedByUserId,
             command.Reason,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -286,10 +290,13 @@ public sealed class QuarantineInventoryLotCommandHandler
         if (item is null)
             return false;
 
-        item.QuarantineLot(command.LotId, _dateTimeProvider.UtcNow);
-        _repository.Update(item);
+        item.QuarantineLot(
+            command.LotId,
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
+        _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return true;
     }
 }
@@ -322,7 +329,7 @@ public sealed class ReleaseInventoryLotCommandHandler
         if (item is null)
             return false;
 
-        var now = _dateTimeProvider.UtcNow;
+        var now = _dateTimeProvider.UtcNow.UtcDateTime;
 
         item.ReleaseLotFromQuarantine(
             command.LotId,
@@ -368,7 +375,7 @@ public sealed class DisposeInventoryLotCommandHandler
             command.LotId,
             command.PerformedByUserId,
             command.Reason,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -410,12 +417,15 @@ public sealed class DeactivateInventoryItemCommandHandler
         CancellationToken cancellationToken)
     {
         var item = await _repository.GetByIdAsync(id, cancellationToken);
+
         if (item is null)
             return false;
 
-        operation(item, _dateTimeProvider.UtcNow);
+        operation(item, _dateTimeProvider.UtcNow.UtcDateTime);
+
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return true;
     }
 }
@@ -448,7 +458,8 @@ public sealed class ReactivateInventoryItemCommandHandler
         if (item is null)
             return false;
 
-        item.Reactivate(_dateTimeProvider.UtcNow);
+        item.Reactivate(_dateTimeProvider.UtcNow.UtcDateTime);
+
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -484,7 +495,8 @@ public sealed class DiscontinueInventoryItemCommandHandler
         if (item is null)
             return false;
 
-        item.Discontinue(_dateTimeProvider.UtcNow);
+        item.Discontinue(_dateTimeProvider.UtcNow.UtcDateTime);
+
         _repository.Update(item);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

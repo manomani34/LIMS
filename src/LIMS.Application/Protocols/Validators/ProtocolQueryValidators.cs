@@ -9,7 +9,8 @@ public sealed class GetProtocolByIdQueryValidator
     public GetProtocolByIdQueryValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
     }
 }
 
@@ -19,11 +20,14 @@ public sealed class GetProtocolByCodeQueryValidator
     public GetProtocolByCodeQueryValidator()
     {
         RuleFor(x => x.LaboratoryId)
-            .Must(x => x != Guid.Empty, "LaboratoryId is required.");
+            .NotEmpty()
+            .WithMessage("LaboratoryId is required.");
 
         RuleFor(x => x.ProtocolCode)
-            .NotEmpty("ProtocolCode is required.")
-            .MaximumLength(50, "ProtocolCode cannot exceed 50 characters.");
+            .NotEmpty()
+            .WithMessage("ProtocolCode is required.")
+            .MaximumLength(50)
+            .WithMessage("ProtocolCode cannot exceed 50 characters.");
     }
 }
 
@@ -33,6 +37,7 @@ public sealed class GetProtocolsByLaboratoryIdQueryValidator
     public GetProtocolsByLaboratoryIdQueryValidator()
     {
         RuleFor(x => x.LaboratoryId)
-            .Must(x => x != Guid.Empty, "LaboratoryId is required.");
+            .NotEmpty()
+            .WithMessage("LaboratoryId is required.");
     }
 }

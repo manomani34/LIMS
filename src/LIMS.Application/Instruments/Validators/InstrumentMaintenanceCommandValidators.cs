@@ -1,5 +1,4 @@
 using LIMS.Application.Abstractions.Validation;
-using LIMS.Application.Common.Validation;
 using LIMS.Application.Instruments.Commands;
 
 namespace LIMS.Application.Instruments.Validators;
@@ -47,3 +46,4 @@ public sealed class CompleteInstrumentMaintenanceCommandValidator
             .MaximumLength(2000);
     }
 }
+

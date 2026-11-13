@@ -1,9 +1,12 @@
+
+using LIMS.Api.Areas.Samples.Mappings;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Samples.Commands;
 using LIMS.Application.Samples.DTOs;
 using LIMS.Application.Samples.Queries;
 using LIMS.Contracts.Common;
 using LIMS.Contracts.Samples;
+using LIMS.Contracts.Samples.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Samples.Controllers;
@@ -22,7 +25,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
@@ -34,8 +37,8 @@ public sealed class SamplesController : ControllerBase
             request.SampleCode,
             request.Name,
             request.Description,
-            (LIMS.Domain.Samples.Enums.SampleType)request.Type,
-            (LIMS.Domain.Samples.Enums.SamplePriority)request.Priority,
+            request.Type.ToDomain(),
+            request.Priority.ToDomain(),
             request.Source,
             request.RegisteredByUserId);
 
@@ -46,40 +49,50 @@ public sealed class SamplesController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { sampleId },
-            sampleId);
+            new ResourceIdResponse(sampleId));
     }
 
     [HttpGet("{sampleId:guid}")]
-    [ProducesResponseType(typeof(SampleDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SampleResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetSampleByIdQuery, SampleDetailsDto?>(
+        var result = await _dispatcher.QueryAsync<
+            GetSampleByIdQuery,
+            SampleDetailsDto?>(
             new GetSampleByIdQuery(sampleId),
             cancellationToken);
 
-        return result is null ? NotFound() : Ok(result);
+        return result is null
+            ? NotFound()
+            : Ok(result.ToResponse());
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{sampleCode}")]
-    [ProducesResponseType(typeof(SampleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SampleResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
         Guid laboratoryId,
         string sampleCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetSampleByCodeQuery, SampleDto?>(
+        var result = await _dispatcher.QueryAsync<
+            GetSampleByCodeQuery,
+            SampleDto?>(
             new GetSampleByCodeQuery(laboratoryId, sampleCode),
             cancellationToken);
 
-        return result is null ? NotFound() : Ok(result);
+        return result is null
+            ? NotFound()
+            : Ok(result.ToResponse());
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<SampleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<SampleResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
         CancellationToken cancellationToken)
@@ -87,14 +100,18 @@ public sealed class SamplesController : ControllerBase
         var result = await _dispatcher.QueryAsync<
             GetSamplesByLaboratoryIdQuery,
             IReadOnlyCollection<SampleDto>>(
-                new GetSamplesByLaboratoryIdQuery(laboratoryId),
-                cancellationToken);
+            new GetSamplesByLaboratoryIdQuery(laboratoryId),
+            cancellationToken);
 
-        return Ok(result);
+        return Ok(result
+            .Select(sample => sample.ToResponse())
+            .ToArray());
     }
 
     [HttpGet("by-assigned-user/{userId}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<SampleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<SampleResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByAssignedUser(
         string userId,
         CancellationToken cancellationToken)
@@ -102,10 +119,12 @@ public sealed class SamplesController : ControllerBase
         var result = await _dispatcher.QueryAsync<
             GetSamplesByAssignedUserIdQuery,
             IReadOnlyCollection<SampleDto>>(
-                new GetSamplesByAssignedUserIdQuery(userId),
-                cancellationToken);
+            new GetSamplesByAssignedUserIdQuery(userId),
+            cancellationToken);
 
-        return Ok(result);
+        return Ok(result
+            .Select(sample => sample.ToResponse())
+            .ToArray());
     }
 
     [HttpPut("{sampleId:guid}")]
@@ -117,7 +136,9 @@ public sealed class SamplesController : ControllerBase
         [FromBody] UpdateSampleRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<UpdateSampleInformationCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            UpdateSampleInformationCommand,
+            bool>(
             new UpdateSampleInformationCommand(
                 sampleId,
                 request.Name,
@@ -149,7 +170,9 @@ public sealed class SamplesController : ControllerBase
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<StartSamplePreparationCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            StartSamplePreparationCommand,
+            bool>(
             new StartSamplePreparationCommand(sampleId),
             cancellationToken);
 
@@ -163,7 +186,9 @@ public sealed class SamplesController : ControllerBase
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<MarkSampleReadyForAnalysisCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            MarkSampleReadyForAnalysisCommand,
+            bool>(
             new MarkSampleReadyForAnalysisCommand(sampleId),
             cancellationToken);
 
@@ -177,7 +202,9 @@ public sealed class SamplesController : ControllerBase
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<StartSampleAnalysisCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            StartSampleAnalysisCommand,
+            bool>(
             new StartSampleAnalysisCommand(sampleId),
             cancellationToken);
 
@@ -191,7 +218,9 @@ public sealed class SamplesController : ControllerBase
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<CompleteSampleAnalysisCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            CompleteSampleAnalysisCommand,
+            bool>(
             new CompleteSampleAnalysisCommand(sampleId),
             cancellationToken);
 

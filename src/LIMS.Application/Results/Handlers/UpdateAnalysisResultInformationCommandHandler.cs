@@ -1,3 +1,4 @@
+﻿using LIMS.Application.Instruments.Repositories;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
@@ -64,3 +65,4 @@ public sealed class UpdateAnalysisResultInformationCommandHandler
         return true;
     }
 }
+

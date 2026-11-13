@@ -1,6 +1,5 @@
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Requests.Queries;
-using LIMS.Application.Abstractions.Validation;
 
 namespace LIMS.Application.Requests.Validators;
 

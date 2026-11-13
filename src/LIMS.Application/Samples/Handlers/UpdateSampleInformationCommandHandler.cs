@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
@@ -36,6 +37,8 @@ public sealed class UpdateSampleInformationCommandHandler
 
         sample.UpdateInformation(
             command.Name,
+            sample.Type,
+            sample.Priority,
             command.Description,
             command.Source,
             _dateTimeProvider.UtcNow);

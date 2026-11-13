@@ -1,7 +1,6 @@
-using LIMS.Application.Abstractions.Messaging;
+﻿using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Laboratories.Abstractions;
 using LIMS.Application.Laboratories.Interfaces;
 using LIMS.Application.Protocols.Abstractions;
 using LIMS.Application.Protocols.Commands;
@@ -65,3 +64,4 @@ public sealed class CreateProtocolCommandHandler
         return protocol.Id;
     }
 }
+

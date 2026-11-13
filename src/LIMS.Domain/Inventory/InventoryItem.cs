@@ -40,11 +40,6 @@ public sealed class InventoryItem : AggregateRoot<Guid>
 
     public DateTime UpdatedAt { get; private set; }
 
-    public decimal TotalAvailableQuantity =>
-        _lots
-            .Where(x => x.Status == InventoryLotStatus.Available)
-            .Sum(x => x.AvailableQuantity);
-
     public IReadOnlyCollection<InventoryLot> Lots =>
         _lots.AsReadOnly();
 
@@ -53,6 +48,17 @@ public sealed class InventoryItem : AggregateRoot<Guid>
 
     private InventoryItem()
     {
+    }
+
+    public decimal GetTotalAvailableQuantity(DateOnly currentDate)
+    {
+        return _lots
+            .Where(x =>
+                x.Status == InventoryLotStatus.Available &&
+                x.AvailableQuantity > 0 &&
+                (!x.ExpiryDate.HasValue ||
+                 x.ExpiryDate.Value >= currentDate))
+            .Sum(x => x.AvailableQuantity);
     }
 
     public static InventoryItem Create(
@@ -74,17 +80,26 @@ public sealed class InventoryItem : AggregateRoot<Guid>
             throw new InventoryDomainException(
                 "Laboratory identifier is required.");
 
-        if (string.IsNullOrWhiteSpace(itemCode))
-            throw new InventoryDomainException(
-                "Inventory item code is required.");
+        ValidateRequired(itemCode, 50, nameof(itemCode));
+        ValidateRequired(name, 200, nameof(name));
+        ValidateRequired(defaultUnit, 30, nameof(defaultUnit));
 
-        if (string.IsNullOrWhiteSpace(name))
+        if (itemCode.Trim().Any(c =>
+                !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) && c != '_' && c != '-'))
+        {
             throw new InventoryDomainException(
-                "Inventory item name is required.");
+                "Inventory item code contains invalid characters.");
+        }
 
-        if (string.IsNullOrWhiteSpace(defaultUnit))
-            throw new InventoryDomainException(
-                "Default unit is required.");
+        ValidateOptionalLength(description, 2000, nameof(description));
+        ValidateOptionalLength(casNumber, 50, nameof(casNumber));
+        ValidateOptionalLength(chemicalFormula, 100, nameof(chemicalFormula));
+        ValidateOptionalLength(molecularWeight, 50, nameof(molecularWeight));
+        ValidateOptionalLength(hazardClassification, 1000, nameof(hazardClassification));
+        ValidateOptionalLength(
+            safetyDataSheetReference,
+            500,
+            nameof(safetyDataSheetReference));
 
         if (!Enum.IsDefined(type))
             throw new InventoryDomainException(
@@ -131,13 +146,18 @@ public sealed class InventoryItem : AggregateRoot<Guid>
     {
         EnsureNotDiscontinued();
 
-        if (string.IsNullOrWhiteSpace(name))
-            throw new InventoryDomainException(
-                "Inventory item name is required.");
+        ValidateRequired(name, 200, nameof(name));
+        ValidateRequired(defaultUnit, 30, nameof(defaultUnit));
 
-        if (string.IsNullOrWhiteSpace(defaultUnit))
-            throw new InventoryDomainException(
-                "Default unit is required.");
+        ValidateOptionalLength(description, 2000, nameof(description));
+        ValidateOptionalLength(casNumber, 50, nameof(casNumber));
+        ValidateOptionalLength(chemicalFormula, 100, nameof(chemicalFormula));
+        ValidateOptionalLength(molecularWeight, 50, nameof(molecularWeight));
+        ValidateOptionalLength(hazardClassification, 1000, nameof(hazardClassification));
+        ValidateOptionalLength(
+            safetyDataSheetReference,
+            500,
+            nameof(safetyDataSheetReference));
 
         if (!Enum.IsDefined(type))
             throw new InventoryDomainException(
@@ -189,6 +209,10 @@ public sealed class InventoryItem : AggregateRoot<Guid>
         DateTime occurredAt)
     {
         EnsureActive();
+
+        ValidateRequired(performedByUserId, 150, nameof(performedByUserId));
+        ValidateOptionalLength(referenceNumber, 150, nameof(referenceNumber));
+        ValidateOptionalLength(notes, 2000, nameof(notes));
 
         if (!string.Equals(
                 DefaultUnit,
@@ -246,13 +270,27 @@ public sealed class InventoryItem : AggregateRoot<Guid>
         string consumedByUserId,
         Guid? experimentId,
         string? notes,
+        DateOnly currentDate,
         DateTime occurredAt)
     {
-        EnsureActive();
+        if (Status is not (
+            InventoryItemStatus.Active or
+            InventoryItemStatus.Discontinued))
+        {
+            throw new InventoryDomainException(
+                "Stock consumption is allowed only for active or discontinued items.");
+        }
+
+        ValidateRequired(consumedByUserId, 150, nameof(consumedByUserId));
+        ValidateOptionalLength(notes, 2000, nameof(notes));
+
+        if (experimentId == Guid.Empty)
+            throw new InventoryDomainException(
+                "Experiment identifier cannot be empty.");
 
         var lot = GetLot(lotId);
 
-        lot.Consume(quantity);
+        lot.Consume(quantity, currentDate);
 
         AddMovement(
             lot,
@@ -277,9 +315,8 @@ public sealed class InventoryItem : AggregateRoot<Guid>
     {
         EnsureActive();
 
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new InventoryDomainException(
-                "Adjustment reason is required.");
+        ValidateRequired(performedByUserId, 150, nameof(performedByUserId));
+        ValidateRequired(reason, 2000, nameof(reason));
 
         var lot = GetLot(lotId);
 
@@ -344,9 +381,8 @@ public sealed class InventoryItem : AggregateRoot<Guid>
         string reason,
         DateTime occurredAt)
     {
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new InventoryDomainException(
-                "Disposal reason is required.");
+        ValidateRequired(performedByUserId, 150, nameof(performedByUserId));
+        ValidateRequired(reason, 2000, nameof(reason));
 
         var lot = GetLot(lotId);
 
@@ -390,9 +426,9 @@ public sealed class InventoryItem : AggregateRoot<Guid>
 
     public void Discontinue(DateTime occurredAt)
     {
-        if (Status == InventoryItemStatus.Discontinued)
+        if (Status != InventoryItemStatus.Active)
             throw new InventoryDomainException(
-                "Inventory item is already discontinued.");
+                "Only active inventory items can be discontinued.");
 
         Status = InventoryItemStatus.Discontinued;
         UpdatedAt = occurredAt;
@@ -446,6 +482,36 @@ public sealed class InventoryItem : AggregateRoot<Guid>
         if (Status == InventoryItemStatus.Discontinued)
             throw new InventoryDomainException(
                 "Discontinued inventory items cannot be modified.");
+    }
+
+    private static void ValidateRequired(
+        string? value,
+        int maximumLength,
+        string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InventoryDomainException(
+                $"{propertyName} is required.");
+        }
+
+        if (value.Trim().Length > maximumLength)
+        {
+            throw new InventoryDomainException(
+                $"{propertyName} cannot exceed {maximumLength} characters.");
+        }
+    }
+
+    private static void ValidateOptionalLength(
+        string? value,
+        int maximumLength,
+        string propertyName)
+    {
+        if (value?.Trim().Length > maximumLength)
+        {
+            throw new InventoryDomainException(
+                $"{propertyName} cannot exceed {maximumLength} characters.");
+        }
     }
 
     private static string? NormalizeOptional(string? value)

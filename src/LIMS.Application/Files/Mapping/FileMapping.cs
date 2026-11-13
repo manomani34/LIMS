@@ -1,5 +1,5 @@
+
 using LIMS.Application.Files.DTOs;
-using LIMS.Domain.Files;
 using LIMS.Domain.Files.Entities;
 
 namespace LIMS.Application.Files.Mapping;
@@ -23,10 +23,10 @@ public static class FileMapping
             file.Description,
             file.QuarantineReason,
             file.RejectionReason,
-            file.UploadedAt,
-            file.AvailableAt,
-            file.QuarantinedAt,
-            file.DeletedAt);
+            file.UploadedAt.UtcDateTime,
+            file.AvailableAt?.UtcDateTime,
+            file.QuarantinedAt?.UtcDateTime,
+            file.DeletedAt?.UtcDateTime);
     }
 
     public static FileReferenceDto ToDto(this FileReference reference)
@@ -40,6 +40,6 @@ public static class FileMapping
             reference.ReferenceId,
             reference.LinkedByUserId,
             reference.Purpose,
-            reference.LinkedAt);
+            reference.LinkedAt.UtcDateTime);
     }
 }

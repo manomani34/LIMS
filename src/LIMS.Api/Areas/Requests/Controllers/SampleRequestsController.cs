@@ -1,6 +1,5 @@
 using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Requests.Commands;
 using LIMS.Application.Requests.Queries;
 using LIMS.Contracts.Common;
@@ -48,7 +47,7 @@ public sealed class SampleRequestsController : ControllerBase
             RequireCurrentUserId(),
             request.Priority.ToDomain());
 
-        var requestId = await _dispatcher.SendAsync(
+        var requestId = await _dispatcher.SendAsync<CreateSampleRequestCommand, Guid>(
             command,
             cancellationToken);
 
@@ -65,8 +64,7 @@ public sealed class SampleRequestsController : ControllerBase
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetSampleRequestByIdQuery(requestId),
+        var result = await _dispatcher.QueryAsync<GetSampleRequestByIdQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(new GetSampleRequestByIdQuery(requestId),
             cancellationToken);
 
         return result is null ? NotFound() : Ok(result.ToResponse());
@@ -79,8 +77,7 @@ public sealed class SampleRequestsController : ControllerBase
         string requestCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetSampleRequestByCodeQuery(requestCode),
+        var result = await _dispatcher.QueryAsync<GetSampleRequestByCodeQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(new GetSampleRequestByCodeQuery(requestCode),
             cancellationToken);
 
         return result is null ? NotFound() : Ok(result.ToResponse());
@@ -92,8 +89,7 @@ public sealed class SampleRequestsController : ControllerBase
         string userId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetSampleRequestsByRequesterQuery(userId),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByRequesterQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByRequesterQuery(userId),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
@@ -105,8 +101,7 @@ public sealed class SampleRequestsController : ControllerBase
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetSampleRequestsByLaboratoryQuery(laboratoryId),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByLaboratoryQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByLaboratoryQuery(laboratoryId),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
@@ -131,8 +126,7 @@ public sealed class SampleRequestsController : ControllerBase
                 HttpContext.TraceIdentifier));
         }
 
-        var results = await _dispatcher.QueryAsync(
-            new GetSampleRequestsByStatusQuery(parsedStatus),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByStatusQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByStatusQuery(parsedStatus),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
@@ -143,8 +137,7 @@ public sealed class SampleRequestsController : ControllerBase
     public async Task<IActionResult> GetPendingReview(
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetPendingSampleRequestsQuery(),
+        var results = await _dispatcher.QueryAsync<GetPendingSampleRequestsQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetPendingSampleRequestsQuery(),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
@@ -169,7 +162,7 @@ public sealed class SampleRequestsController : ControllerBase
             request.SampleSource,
             request.Priority.ToDomain());
 
-        var updated = await _dispatcher.SendAsync(
+        var updated = await _dispatcher.SendAsync<UpdateSampleRequestCommand, bool>(
             command,
             cancellationToken);
 
@@ -183,8 +176,7 @@ public sealed class SampleRequestsController : ControllerBase
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new SubmitSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<SubmitSampleRequestCommand, bool>(new SubmitSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId()),
             cancellationToken);
@@ -199,8 +191,7 @@ public sealed class SampleRequestsController : ControllerBase
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new StartSampleRequestReviewCommand(
+        var updated = await _dispatcher.SendAsync<StartSampleRequestReviewCommand, bool>(new StartSampleRequestReviewCommand(
                 requestId,
                 RequireCurrentUserId()),
             cancellationToken);
@@ -216,8 +207,7 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] ApproveSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new ApproveSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<ApproveSampleRequestCommand, bool>(new ApproveSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.LaboratoryId,
@@ -235,8 +225,7 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] RejectSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new RejectSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<RejectSampleRequestCommand, bool>(new RejectSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.Reason),
@@ -253,8 +242,7 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] CancelSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new CancelSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<CancelSampleRequestCommand, bool>(new CancelSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.Reason),
@@ -271,8 +259,7 @@ public sealed class SampleRequestsController : ControllerBase
         [FromQuery] Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new FulfillSampleRequestCommand(requestId, sampleId),
+        var updated = await _dispatcher.SendAsync<FulfillSampleRequestCommand, bool>(new FulfillSampleRequestCommand(requestId, sampleId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();

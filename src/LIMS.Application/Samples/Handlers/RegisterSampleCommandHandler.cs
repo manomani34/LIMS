@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
@@ -44,9 +45,9 @@ public sealed class RegisterSampleCommandHandler
             command.LaboratoryId,
             command.SampleCode,
             command.Name,
-            command.Description,
             command.Type,
             command.Priority,
+            command.Description,
             command.Source,
             command.RegisteredByUserId,
             _dateTimeProvider.UtcNow);

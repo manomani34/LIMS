@@ -13,7 +13,7 @@ public sealed record ExperimentDto(
     string CreatedByUserId,
     string? AssignedToUserId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt,
+    DateTimeOffset? UpdatedAt,
     DateTimeOffset? StartedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset? ArchivedAt);

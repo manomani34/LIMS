@@ -6,6 +6,15 @@ namespace LIMS.Contracts.Inventory.Mappings;
 
 public static class InventoryContractMappings
 {
+    public static InventoryItemStatus ToDomain(
+    this InventoryItemStatusContract value)
+    {
+        if (!Enum.IsDefined(value))
+            throw new ArgumentOutOfRangeException(nameof(value));
+
+        return (InventoryItemStatus)(int)value;
+    }
+
     public static InventoryItemType ToDomain(
         this InventoryItemTypeContract value)
     {

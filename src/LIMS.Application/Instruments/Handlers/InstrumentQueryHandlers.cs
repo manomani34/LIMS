@@ -1,5 +1,5 @@
-using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Instruments.Abstractions;
+﻿using LIMS.Application.Abstractions.Messaging;
+using LIMS.Application.Instruments.Repositories;
 using LIMS.Application.Instruments.DTOs;
 using LIMS.Application.Instruments.Mapping;
 
@@ -91,3 +91,4 @@ public sealed class GetInstrumentsByStatusQueryHandler
         return instruments.Select(x => x.ToDto()).ToArray();
     }
 }
+

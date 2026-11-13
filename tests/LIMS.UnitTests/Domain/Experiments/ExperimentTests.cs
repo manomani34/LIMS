@@ -45,7 +45,7 @@ public sealed class ExperimentTests
         Assert.Equal("user-001", experiment.CreatedByUserId);
         Assert.Null(experiment.AssignedToUserId);
         Assert.Equal(Now, experiment.CreatedAt);
-        Assert.Equal(Now, experiment.UpdatedAt);
+        Assert.Null(experiment.UpdatedAt);
         Assert.Null(experiment.StartedAt);
         Assert.Null(experiment.CompletedAt);
         Assert.Null(experiment.ArchivedAt);

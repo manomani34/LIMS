@@ -1,9 +1,12 @@
+
+using LIMS.Api.Areas.Laboratories.Mappings;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Laboratories.Commands;
 using LIMS.Application.Laboratories.DTOs;
 using LIMS.Application.Laboratories.Queries;
 using LIMS.Contracts.Common;
 using LIMS.Contracts.Laboratories;
+using LIMS.Contracts.Laboratories.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Laboratories.Controllers;
@@ -22,8 +25,8 @@ public sealed class LaboratoriesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateLaboratoryRequest request,
@@ -36,11 +39,14 @@ public sealed class LaboratoriesController : ControllerBase
                 request.Description),
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { laboratoryId = id }, new { id });
+        return CreatedAtAction(
+            nameof(GetById),
+            new { laboratoryId = id },
+            new ResourceIdResponse(id));
     }
 
     [HttpGet("{laboratoryId:guid}")]
-    [ProducesResponseType(typeof(LaboratoryDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LaboratoryDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid laboratoryId,
@@ -52,11 +58,13 @@ public sealed class LaboratoriesController : ControllerBase
             new GetLaboratoryByIdQuery(laboratoryId),
             cancellationToken);
 
-        return result is null ? NotFound() : Ok(result);
+        return result is null
+            ? NotFound()
+            : Ok(result.ToDetailsResponse());
     }
 
     [HttpGet("by-code/{code}")]
-    [ProducesResponseType(typeof(LaboratoryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LaboratoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
         string code,
@@ -68,12 +76,14 @@ public sealed class LaboratoriesController : ControllerBase
             new GetLaboratoryByCodeQuery(code),
             cancellationToken);
 
-        return result is null ? NotFound() : Ok(result);
+        return result is null
+            ? NotFound()
+            : Ok(result.ToResponse());
     }
 
     [HttpGet("by-user/{userId}")]
     [ProducesResponseType(
-        typeof(IReadOnlyCollection<LaboratoryDto>),
+        typeof(IReadOnlyCollection<LaboratoryResponse>),
         StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByUser(
         string userId,
@@ -85,19 +95,23 @@ public sealed class LaboratoriesController : ControllerBase
             new GetLaboratoriesByUserIdQuery(userId),
             cancellationToken);
 
-        return Ok(result);
+        return Ok(result
+            .Select(laboratory => laboratory.ToResponse())
+            .ToArray());
     }
 
     [HttpPut("{laboratoryId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(
         Guid laboratoryId,
         [FromBody] UpdateLaboratoryRequest request,
         CancellationToken cancellationToken)
     {
-        await _dispatcher.SendAsync<UpdateLaboratoryInformationCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            UpdateLaboratoryInformationCommand,
+            bool>(
             new UpdateLaboratoryInformationCommand(
                 laboratoryId,
                 request.Name,
@@ -105,26 +119,28 @@ public sealed class LaboratoriesController : ControllerBase
                 request.Description),
             cancellationToken);
 
-        return NoContent();
+        return updated ? NoContent() : NotFound();
     }
 
     [HttpPost("{laboratoryId:guid}/members")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddMember(
         Guid laboratoryId,
         [FromBody] AddLaboratoryMemberRequest request,
         CancellationToken cancellationToken)
     {
-        await _dispatcher.SendAsync<AddLaboratoryMemberCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            AddLaboratoryMemberCommand,
+            bool>(
             new AddLaboratoryMemberCommand(
                 laboratoryId,
                 request.UserId,
-                request.Role),
+                request.Role.ToDomain()),
             cancellationToken);
 
-        return NoContent();
+        return updated ? NoContent() : NotFound();
     }
 
     [HttpDelete("{laboratoryId:guid}/members/{userId}")]
@@ -135,28 +151,32 @@ public sealed class LaboratoriesController : ControllerBase
         string userId,
         CancellationToken cancellationToken)
     {
-        await _dispatcher.SendAsync<RemoveLaboratoryMemberCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            RemoveLaboratoryMemberCommand,
+            bool>(
             new RemoveLaboratoryMemberCommand(laboratoryId, userId),
             cancellationToken);
 
-        return NoContent();
+        return updated ? NoContent() : NotFound();
     }
 
     [HttpPatch("{laboratoryId:guid}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangeStatus(
         Guid laboratoryId,
         [FromBody] ChangeLaboratoryStatusRequest request,
         CancellationToken cancellationToken)
     {
-        await _dispatcher.SendAsync<ChangeLaboratoryStatusCommand, bool>(
+        var updated = await _dispatcher.SendAsync<
+            ChangeLaboratoryStatusCommand,
+            bool>(
             new ChangeLaboratoryStatusCommand(
                 laboratoryId,
-                request.Status),
+                request.Status.ToDomain()),
             cancellationToken);
 
-        return NoContent();
+        return updated ? NoContent() : NotFound();
     }
 }

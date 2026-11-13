@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 using LIMS.Domain.Workflows.Entities;
 using LIMS.Domain.Workflows.Enums;
 using LIMS.Domain.Workflows.Events;
@@ -101,9 +101,9 @@ public sealed class WorkflowInstance : AggregateRoot<Guid>
 
         foreach (var step in definition.Steps.OrderBy(x => x.Sequence))
         {
-            var dueAt = step.DueAfterHours.HasValue
-                ? startedAt.AddHours(step.DueAfterHours.Value)
-                : null;
+            DateTime? dueAt = step.DueAfterHours.HasValue
+    ? startedAt.AddHours(step.DueAfterHours.Value)
+    : null;
 
             instance._tasks.Add(
                 new WorkflowTask(
@@ -377,3 +377,4 @@ public sealed class WorkflowInstance : AggregateRoot<Guid>
         return normalized;
     }
 }
+

@@ -1,5 +1,4 @@
 using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Common.Dispatching;
 using LIMS.Domain.Results.Enums;
 
 namespace LIMS.Application.Results.Commands;
@@ -15,3 +14,4 @@ public sealed record UpdateResultEntryCommand(
     decimal? Uncertainty,
     string? Method,
     string? Notes) : ICommand<bool>;
+

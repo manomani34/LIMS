@@ -1,5 +1,4 @@
-using LIMS.Domain.Common;
-using LIMS.Domain.Results.Entities;
+﻿using LIMS.Domain.Common;
 using LIMS.Domain.Results.Enums;
 using LIMS.Domain.Results.Events;
 
@@ -499,3 +498,4 @@ public sealed class AnalysisResult : AggregateRoot<Guid>
             c is '-' or '_');
     }
 }
+

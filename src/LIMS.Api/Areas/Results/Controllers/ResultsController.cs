@@ -1,7 +1,8 @@
-using LIMS.Application;
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Results.Commands;
 using LIMS.Application.Results.Queries;
+using LIMS.Contracts.Common;
 using LIMS.Contracts.Results.Mappings;
 using LIMS.Contracts.Results.Requests;
 using LIMS.Contracts.Results.Responses;
@@ -24,14 +25,14 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var resultId = await _dispatcher.SendAsync(
+        var resultId = await _dispatcher.SendAsync<CreateAnalysisResultCommand, Guid>(
             new CreateAnalysisResultCommand(
                 request.LaboratoryId,
                 request.ExperimentId,
@@ -46,7 +47,7 @@ public sealed class ResultsController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { resultId },
-            new { id = resultId });
+            new ResourceIdResponse(resultId));
     }
 
     [HttpGet("{resultId:guid}")]
@@ -56,9 +57,11 @@ public sealed class ResultsController : ControllerBase
         Guid resultId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetAnalysisResultByIdQuery(resultId),
-            cancellationToken);
+        var result = await _dispatcher.QueryAsync<
+            GetAnalysisResultByIdQuery,
+            LIMS.Application.Results.DTOs.AnalysisResultDetailsDto?>(
+                new GetAnalysisResultByIdQuery(resultId),
+                cancellationToken);
 
         return result is null
             ? NotFound()
@@ -73,9 +76,11 @@ public sealed class ResultsController : ControllerBase
         string resultCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetAnalysisResultByCodeQuery(laboratoryId, resultCode),
-            cancellationToken);
+        var result = await _dispatcher.QueryAsync<
+            GetAnalysisResultByCodeQuery,
+            LIMS.Application.Results.DTOs.AnalysisResultDto?>(
+                new GetAnalysisResultByCodeQuery(laboratoryId, resultCode),
+                cancellationToken);
 
         return result is null
             ? NotFound()
@@ -88,9 +93,11 @@ public sealed class ResultsController : ControllerBase
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetAnalysisResultsByLaboratoryIdQuery(laboratoryId),
-            cancellationToken);
+        var results = await _dispatcher.QueryAsync<
+            GetAnalysisResultsByLaboratoryIdQuery,
+            IReadOnlyCollection<LIMS.Application.Results.DTOs.AnalysisResultDto>>(
+                new GetAnalysisResultsByLaboratoryIdQuery(laboratoryId),
+                cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
@@ -101,9 +108,11 @@ public sealed class ResultsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetAnalysisResultsByExperimentIdQuery(experimentId),
-            cancellationToken);
+        var results = await _dispatcher.QueryAsync<
+            GetAnalysisResultsByExperimentIdQuery,
+            IReadOnlyCollection<LIMS.Application.Results.DTOs.AnalysisResultDto>>(
+                new GetAnalysisResultsByExperimentIdQuery(experimentId),
+                cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
@@ -114,16 +123,18 @@ public sealed class ResultsController : ControllerBase
         Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetAnalysisResultsBySampleIdQuery(sampleId),
-            cancellationToken);
+        var results = await _dispatcher.QueryAsync<
+            GetAnalysisResultsBySampleIdQuery,
+            IReadOnlyCollection<LIMS.Application.Results.DTOs.AnalysisResultDto>>(
+                new GetAnalysisResultsBySampleIdQuery(sampleId),
+                cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
 
     [HttpGet("by-status/{laboratoryId:guid}/{status}")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AnalysisResultResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByStatus(
         Guid laboratoryId,
         string status,
@@ -132,16 +143,16 @@ public sealed class ResultsController : ControllerBase
         if (!Enum.TryParse<ResultStatus>(status, true, out var parsedStatus) ||
             !Enum.IsDefined(parsedStatus))
         {
-            return BadRequest(new
-            {
-                code = "invalid_result_status",
-                message = "The specified result status is invalid."
-            });
+            return BadRequest(new ErrorResponse(
+                "INVALID_RESULT_STATUS",
+                "The specified result status is invalid."));
         }
 
-        var results = await _dispatcher.QueryAsync(
-            new GetAnalysisResultsByStatusQuery(laboratoryId, parsedStatus),
-            cancellationToken);
+        var results = await _dispatcher.QueryAsync<
+            GetAnalysisResultsByStatusQuery,
+            IReadOnlyCollection<LIMS.Application.Results.DTOs.AnalysisResultDto>>(
+                new GetAnalysisResultsByStatusQuery(laboratoryId, parsedStatus),
+                cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
@@ -149,13 +160,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPut("{resultId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(
         Guid resultId,
         [FromBody] UpdateAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
+        var updated = await _dispatcher.SendAsync<UpdateAnalysisResultInformationCommand, bool>(
             new UpdateAnalysisResultInformationCommand(
                 resultId,
                 request.Title,
@@ -167,15 +178,15 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost("{resultId:guid}/entries")]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddEntry(
         Guid resultId,
         [FromBody] AddResultEntryRequest request,
         CancellationToken cancellationToken)
     {
-        var entryId = await _dispatcher.SendAsync(
+        var entryId = await _dispatcher.SendAsync<AddResultEntryCommand, Guid>(
             new AddResultEntryCommand(
                 resultId,
                 request.ParameterName,
@@ -191,20 +202,20 @@ public sealed class ResultsController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { resultId },
-            new { id = entryId });
+            new ResourceIdResponse(entryId));
     }
 
     [HttpPut("{resultId:guid}/entries/{entryId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateEntry(
         Guid resultId,
         Guid entryId,
         [FromBody] UpdateResultEntryRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
+        var updated = await _dispatcher.SendAsync<UpdateResultEntryCommand, bool>(
             new UpdateResultEntryCommand(
                 resultId,
                 entryId,
@@ -229,7 +240,7 @@ public sealed class ResultsController : ControllerBase
         Guid entryId,
         CancellationToken cancellationToken)
     {
-        var removed = await _dispatcher.SendAsync(
+        var removed = await _dispatcher.SendAsync<RemoveResultEntryCommand, bool>(
             new RemoveResultEntryCommand(resultId, entryId),
             cancellationToken);
 
@@ -239,13 +250,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/submit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Submit(
         Guid resultId,
         [FromBody] SubmitAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var submitted = await _dispatcher.SendAsync(
+        var submitted = await _dispatcher.SendAsync<SubmitAnalysisResultCommand, bool>(
             new SubmitAnalysisResultCommand(
                 resultId,
                 request.SubmittedByUserId),
@@ -257,13 +268,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/start-review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> StartReview(
         Guid resultId,
         [FromBody] StartAnalysisResultReviewRequest request,
         CancellationToken cancellationToken)
     {
-        var started = await _dispatcher.SendAsync(
+        var started = await _dispatcher.SendAsync<StartAnalysisResultReviewCommand, bool>(
             new StartAnalysisResultReviewCommand(
                 resultId,
                 request.ReviewerUserId),
@@ -275,13 +286,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/approve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(
         Guid resultId,
         [FromBody] ApproveAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var approved = await _dispatcher.SendAsync(
+        var approved = await _dispatcher.SendAsync<ApproveAnalysisResultCommand, bool>(
             new ApproveAnalysisResultCommand(
                 resultId,
                 request.ReviewerUserId,
@@ -294,13 +305,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/reject")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Reject(
         Guid resultId,
         [FromBody] RejectAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var rejected = await _dispatcher.SendAsync(
+        var rejected = await _dispatcher.SendAsync<RejectAnalysisResultCommand, bool>(
             new RejectAnalysisResultCommand(
                 resultId,
                 request.ReviewerUserId,
@@ -313,13 +324,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/return-to-draft")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ReturnToDraft(
         Guid resultId,
         [FromBody] ReturnAnalysisResultToDraftRequest request,
         CancellationToken cancellationToken)
     {
-        var returned = await _dispatcher.SendAsync(
+        var returned = await _dispatcher.SendAsync<ReturnAnalysisResultToDraftCommand, bool>(
             new ReturnAnalysisResultToDraftCommand(
                 resultId,
                 request.RequestedByUserId),
@@ -331,13 +342,13 @@ public sealed class ResultsController : ControllerBase
     [HttpPost("{resultId:guid}/archive")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Archive(
         Guid resultId,
         [FromBody] ArchiveAnalysisResultRequest request,
         CancellationToken cancellationToken)
     {
-        var archived = await _dispatcher.SendAsync(
+        var archived = await _dispatcher.SendAsync<ArchiveAnalysisResultCommand, bool>(
             new ArchiveAnalysisResultCommand(
                 resultId,
                 request.ArchivedByUserId),

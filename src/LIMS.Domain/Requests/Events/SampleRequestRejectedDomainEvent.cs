@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Requests.Events;
 
@@ -7,4 +7,5 @@ public sealed record SampleRequestRejectedDomainEvent(
     string RejectedByUserId,
     string Reason,
     DateTime RejectedAt,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

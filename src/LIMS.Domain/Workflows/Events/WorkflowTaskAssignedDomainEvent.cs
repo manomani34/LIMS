@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Workflows.Events;
 
@@ -7,4 +7,5 @@ public sealed record WorkflowTaskAssignedDomainEvent(
     Guid TaskId,
     string AssignedToUserId,
     DateTime AssignedAt,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

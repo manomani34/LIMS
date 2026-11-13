@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Behaviors;
@@ -57,6 +58,7 @@ public static class DependencyInjection
 
         return genericType == typeof(ICommandHandler<,>)
                || genericType == typeof(IQueryHandler<,>)
-               || genericType == typeof(IValidator<>);
+               || genericType == typeof(IValidator<>)
+               || genericType == typeof(IDomainEventHandler<>);
     }
 }

@@ -1,8 +1,9 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Files.Events;
 
 public sealed record StoredFileRegisteredDomainEvent(
     Guid FileId,
     string OriginalFileName,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

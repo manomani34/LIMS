@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Requests.Events;
 
@@ -7,4 +7,5 @@ public sealed record SampleRequestCancelledDomainEvent(
     string CancelledByUserId,
     string? Reason,
     DateTime CancelledAt,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

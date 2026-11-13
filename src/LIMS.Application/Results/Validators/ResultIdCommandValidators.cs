@@ -1,3 +1,5 @@
+﻿using LIMS.Application.Results.Commands;
+using LIMS.Application.Results.Queries;
 using LIMS.Application.Abstractions.Validation;
 
 namespace LIMS.Application.Results.Validators;

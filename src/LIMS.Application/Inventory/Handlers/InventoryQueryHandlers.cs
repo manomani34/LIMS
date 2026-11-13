@@ -1,4 +1,5 @@
 using LIMS.Application.Abstractions.Messaging;
+using LIMS.Application.Abstractions.Time;
 using LIMS.Application.Inventory.DTOs;
 using LIMS.Application.Inventory.Mapping;
 using LIMS.Application.Inventory.Queries;
@@ -10,11 +11,14 @@ public sealed class GetInventoryItemByIdQueryHandler
     : IQueryHandler<GetInventoryItemByIdQuery, InventoryItemDetailsDto?>
 {
     private readonly IInventoryItemRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetInventoryItemByIdQueryHandler(
-        IInventoryItemRepository repository)
+        IInventoryItemRepository repository,
+        IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<InventoryItemDetailsDto?> HandleAsync(
@@ -27,7 +31,13 @@ public sealed class GetInventoryItemByIdQueryHandler
             query.InventoryItemId,
             cancellationToken);
 
-        return item?.ToDetailsDto();
+        if (item is null)
+            return null;
+
+        var currentDate = DateOnly.FromDateTime(
+            _dateTimeProvider.UtcNow.UtcDateTime);
+
+        return item.ToDetailsDto(currentDate);
     }
 }
 
@@ -35,11 +45,14 @@ public sealed class GetInventoryItemByCodeQueryHandler
     : IQueryHandler<GetInventoryItemByCodeQuery, InventoryItemDto?>
 {
     private readonly IInventoryItemRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetInventoryItemByCodeQueryHandler(
-        IInventoryItemRepository repository)
+        IInventoryItemRepository repository,
+        IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<InventoryItemDto?> HandleAsync(
@@ -53,7 +66,13 @@ public sealed class GetInventoryItemByCodeQueryHandler
             query.ItemCode,
             cancellationToken);
 
-        return item?.ToDto();
+        if (item is null)
+            return null;
+
+        var currentDate = DateOnly.FromDateTime(
+            _dateTimeProvider.UtcNow.UtcDateTime);
+
+        return item.ToDto(currentDate);
     }
 }
 
@@ -63,11 +82,14 @@ public sealed class GetInventoryItemsByLaboratoryQueryHandler
         IReadOnlyCollection<InventoryItemDto>>
 {
     private readonly IInventoryItemRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetInventoryItemsByLaboratoryQueryHandler(
-        IInventoryItemRepository repository)
+        IInventoryItemRepository repository,
+        IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<IReadOnlyCollection<InventoryItemDto>> HandleAsync(
@@ -84,6 +106,11 @@ public sealed class GetInventoryItemsByLaboratoryQueryHandler
             query.PageSize,
             cancellationToken);
 
-        return items.Select(x => x.ToDto()).ToArray();
+        var currentDate = DateOnly.FromDateTime(
+            _dateTimeProvider.UtcNow.UtcDateTime);
+
+        return items
+            .Select(x => x.ToDto(currentDate))
+            .ToArray();
     }
 }

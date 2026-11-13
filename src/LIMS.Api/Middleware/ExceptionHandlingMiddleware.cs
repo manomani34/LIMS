@@ -1,6 +1,8 @@
 using System.Text.Json;
+using LIMS.Api.Exceptions;
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Contracts.Common;
+using LIMS.Domain.Common;
 
 namespace LIMS.Api.Middleware;
 
@@ -33,9 +35,19 @@ public sealed class ExceptionHandlingMiddleware
                 "Request cancelled. TraceId: {TraceId}",
                 context.TraceIdentifier);
         }
+        catch (AuthenticatedUserIdUnavailableException exception)
+        {
+            await HandleAuthenticatedUserIdUnavailableAsync(
+                context,
+                exception);
+        }
         catch (ValidationException exception)
         {
             await HandleValidationExceptionAsync(context, exception);
+        }
+        catch (DomainException exception)
+        {
+            await HandleDomainExceptionAsync(context, exception);
         }
         catch (Exception exception)
         {
@@ -47,6 +59,35 @@ public sealed class ExceptionHandlingMiddleware
 
             await HandleExceptionAsync(context);
         }
+    }
+
+    private async Task HandleAuthenticatedUserIdUnavailableAsync(
+        HttpContext context,
+        AuthenticatedUserIdUnavailableException exception)
+    {
+        if (context.Response.HasStarted)
+            return;
+
+        _logger.LogWarning(
+            exception,
+            "Authenticated user ID is unavailable. TraceId: {TraceId}, Path: {Path}",
+            context.TraceIdentifier,
+            context.Request.Path);
+
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.ContentType = "application/json";
+
+        var response = new ErrorResponse(
+            Code: "AUTHENTICATED_USER_ID_UNAVAILABLE",
+            Message: "The authenticated user ID is unavailable.",
+            TraceId: context.TraceIdentifier);
+
+        await JsonSerializer.SerializeAsync(
+            context.Response.Body,
+            response,
+            JsonOptions,
+            context.RequestAborted);
     }
 
     private static async Task HandleValidationExceptionAsync(
@@ -70,8 +111,37 @@ public sealed class ExceptionHandlingMiddleware
         var response = new ValidationErrorResponse(
             Code: "VALIDATION_ERROR",
             Message: "One or more validation errors occurred.",
-            TraceId: context.TraceIdentifier,
-            Errors: errors);
+            Errors: errors,
+            TraceId: context.TraceIdentifier);
+
+        await JsonSerializer.SerializeAsync(
+            context.Response.Body,
+            response,
+            JsonOptions,
+            context.RequestAborted);
+    }
+
+    private async Task HandleDomainExceptionAsync(
+        HttpContext context,
+        DomainException exception)
+    {
+        if (context.Response.HasStarted)
+            return;
+
+        _logger.LogWarning(
+            exception,
+            "Domain rule violation. TraceId: {TraceId}, Path: {Path}",
+            context.TraceIdentifier,
+            context.Request.Path);
+
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        context.Response.ContentType = "application/json";
+
+        var response = new ErrorResponse(
+            Code: "DOMAIN_RULE_VIOLATION",
+            Message: exception.Message,
+            TraceId: context.TraceIdentifier);
 
         await JsonSerializer.SerializeAsync(
             context.Response.Body,

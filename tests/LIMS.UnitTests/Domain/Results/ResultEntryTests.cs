@@ -1,194 +1,381 @@
-using LIMS.Domain.Results.Entities;
+
+using LIMS.Domain.Results;
 using LIMS.Domain.Results.Enums;
-using LIMS.Domain.Results.Exceptions;
 using Xunit;
 
 namespace LIMS.UnitTests.Results;
 
 public sealed class ResultEntryTests
 {
-    private static readonly Guid ResultId =
-        Guid.NewGuid();
+    private static readonly Guid LaboratoryId = Guid.NewGuid();
+    private static readonly Guid ExperimentId = Guid.NewGuid();
+    private static readonly Guid SampleId = Guid.NewGuid();
 
-    private static readonly DateTime CreatedAt =
-        new(2026, 11, 6, 10, 0, 0, DateTimeKind.Utc);
+    private static AnalysisResult CreateResult()
+    {
+        return AnalysisResult.Create(
+            LaboratoryId,
+            ExperimentId,
+            SampleId,
+            null,
+            "RES-001",
+            "NMR Analysis",
+            "Initial analysis",
+            "researcher-01",
+            DateTimeOffset.UtcNow);
+    }
 
     [Fact]
-    public void Constructor_ShouldCreateNumericEntry()
+    public void AddEntry_ShouldCreateNumericEntry()
     {
-        var entry = new ResultEntry(
-            ResultId,
-            "Chemical Shift",
+        var result = CreateResult();
+
+        var entryId = result.AddEntry(
+            "Purity",
             ResultValueType.Numeric,
             null,
-            7.25m,
-            "ppm",
-            null,
-            "NMR",
-            null);
+            98.5m,
+            "%",
+            0.2m,
+            "HPLC",
+            "Purity measurement",
+            DateTimeOffset.UtcNow);
 
-        Assert.NotEqual(Guid.Empty, entry.Id);
-        Assert.Equal(ResultId, entry.ResultId);
-        Assert.Equal("Chemical Shift", entry.ParameterName);
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(entryId, entry.Id);
+        Assert.Equal(result.Id, entry.ResultId);
+        Assert.Equal("Purity", entry.ParameterName);
         Assert.Equal(ResultValueType.Numeric, entry.ValueType);
-        Assert.Equal(7.25m, entry.NumericValue);
+        Assert.Equal(98.5m, entry.NumericValue);
+        Assert.Equal("%", entry.Unit);
+        Assert.Equal(0.2m, entry.Uncertainty);
+        Assert.Equal("HPLC", entry.Method);
+        Assert.Equal("Purity measurement", entry.Notes);
     }
 
     [Fact]
-    public void Constructor_ShouldRejectEmptyResultId()
+    public void AddEntry_ShouldNormalizeParameterName()
     {
-        Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                Guid.Empty,
-                "Chemical Shift",
-                ResultValueType.Numeric,
-                null,
-                7.25m,
-                "ppm",
-                null,
-                null,
-                null));
+        var result = CreateResult();
+
+        result.AddEntry(
+            "  Purity  ",
+            ResultValueType.Numeric,
+            null,
+            98.5m,
+            "%",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal("Purity", Assert.Single(result.Entries).ParameterName);
     }
 
     [Fact]
-    public void Constructor_ShouldRejectNumericEntryWithoutNumericValue()
+    public void AddEntry_ShouldCreateTextEntry()
     {
-        Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                ResultId,
-                "Chemical Shift",
-                ResultValueType.Numeric,
-                null,
-                null,
-                "ppm",
-                null,
-                null,
-                null));
-    }
+        var result = CreateResult();
 
-    [Fact]
-    public void Constructor_ShouldRejectNegativeUncertainty()
-    {
-        Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                ResultId,
-                "Chemical Shift",
-                ResultValueType.Numeric,
-                null,
-                7.25m,
-                "ppm",
-                -0.1m,
-                null,
-                null));
-    }
-
-    [Fact]
-    public void Constructor_ShouldCreateTextEntry()
-    {
-        var entry = new ResultEntry(
-            ResultId,
-            "Observation",
+        result.AddEntry(
+            "Appearance",
             ResultValueType.Text,
-            "Yellow solution",
+            "Yellow powder",
             null,
             null,
             null,
             null,
-            null);
+            null,
+            DateTimeOffset.UtcNow);
 
-        Assert.Equal(ResultValueType.Text, entry.ValueType);
-        Assert.Equal("Yellow solution", entry.Value);
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal("Yellow powder", entry.Value);
+        Assert.Null(entry.NumericValue);
     }
 
     [Fact]
-    public void Constructor_ShouldRejectTextEntryWithoutValue()
+    public void AddEntry_ShouldCreateBooleanEntry()
     {
-        Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                ResultId,
-                "Observation",
-                ResultValueType.Text,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null));
-    }
+        var result = CreateResult();
 
-    [Theory]
-    [InlineData("true")]
-    [InlineData("false")]
-    [InlineData("TRUE")]
-    [InlineData("FALSE")]
-    public void Constructor_ShouldAcceptBooleanValues(string value)
-    {
-        var entry = new ResultEntry(
-            ResultId,
-            "Detected",
+        result.AddEntry(
+            "Passed",
             ResultValueType.Boolean,
-            value,
+            "true",
             null,
             null,
             null,
             null,
-            null);
+            null,
+            DateTimeOffset.UtcNow);
 
-        Assert.Equal(value, entry.Value);
-    }
-
-    [Theory]
-    [InlineData("yes")]
-    [InlineData("no")]
-    [InlineData("1")]
-    [InlineData("0")]
-    public void Constructor_ShouldRejectInvalidBooleanValues(string value)
-    {
-        Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                ResultId,
-                "Detected",
-                ResultValueType.Boolean,
-                value,
-                null,
-                null,
-                null,
-                null,
-                null));
-    }
-
-    [Theory]
-    [InlineData("2026-11-06")]
-    [InlineData("2025-01-15")]
-    public void Constructor_ShouldAcceptValidDateValues(string value)
-    {
-        var entry = new ResultEntry(
-            ResultId,
-            "Analysis Date",
-            ResultValueType.Date,
-            value,
-            null,
-            null,
-            null,
-            null,
-            null);
-
-        Assert.Equal(value, entry.Value);
+        Assert.Equal("true", Assert.Single(result.Entries).Value);
     }
 
     [Fact]
-    public void Constructor_ShouldRejectInvalidDateValue()
+    public void AddEntry_ShouldCreateDateEntry()
     {
+        var result = CreateResult();
+
+        result.AddEntry(
+            "AnalysisDate",
+            ResultValueType.Date,
+            "2026-11-10",
+            null,
+            null,
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal(
+            "2026-11-10",
+            Assert.Single(result.Entries).Value);
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectEmptyParameterName()
+    {
+        var result = CreateResult();
+
         Assert.Throws<AnalysisResultDomainException>(() =>
-            new ResultEntry(
-                ResultId,
-                "Analysis Date",
+            result.AddEntry(
+                " ",
+                ResultValueType.Numeric,
+                null,
+                10m,
+                null,
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectDuplicateParameterNamesIgnoringCase()
+    {
+        var result = CreateResult();
+
+        result.AddEntry(
+            "Purity",
+            ResultValueType.Numeric,
+            null,
+            98m,
+            "%",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.AddEntry(
+                "purity",
+                ResultValueType.Numeric,
+                null,
+                99m,
+                "%",
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectNegativeUncertainty()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.AddEntry(
+                "Purity",
+                ResultValueType.Numeric,
+                null,
+                98m,
+                "%",
+                -0.5m,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectTextEntryWithoutValue()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.AddEntry(
+                "Appearance",
+                ResultValueType.Text,
+                " ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectBooleanEntryWithInvalidValue()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.AddEntry(
+                "Passed",
+                ResultValueType.Boolean,
+                "yes",
+                null,
+                null,
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void AddEntry_ShouldRejectInvalidDateValue()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.AddEntry(
+                "AnalysisDate",
                 ResultValueType.Date,
                 "not-a-date",
                 null,
                 null,
                 null,
                 null,
-                null));
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void UpdateEntry_ShouldUpdateExistingEntry()
+    {
+        var result = CreateResult();
+
+        var entryId = result.AddEntry(
+            "Purity",
+            ResultValueType.Numeric,
+            null,
+            95m,
+            "%",
+            null,
+            "HPLC",
+            null,
+            DateTimeOffset.UtcNow);
+
+        result.UpdateEntry(
+            entryId,
+            "Purity",
+            ResultValueType.Numeric,
+            null,
+            99.5m,
+            "%",
+            0.1m,
+            "HPLC",
+            "Updated measurement",
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(99.5m, entry.NumericValue);
+        Assert.Equal(0.1m, entry.Uncertainty);
+        Assert.Equal("Updated measurement", entry.Notes);
+    }
+
+    [Fact]
+    public void UpdateEntry_ShouldRejectUnknownEntryId()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.UpdateEntry(
+                Guid.NewGuid(),
+                "Purity",
+                ResultValueType.Numeric,
+                null,
+                99m,
+                "%",
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void UpdateEntry_ShouldRejectDuplicateParameterName()
+    {
+        var result = CreateResult();
+
+        var firstEntryId = result.AddEntry(
+            "Purity",
+            ResultValueType.Numeric,
+            null,
+            98m,
+            "%",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        result.AddEntry(
+            "Moisture",
+            ResultValueType.Numeric,
+            null,
+            2m,
+            "%",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.UpdateEntry(
+                firstEntryId,
+                "Moisture",
+                ResultValueType.Numeric,
+                null,
+                99m,
+                "%",
+                null,
+                null,
+                null,
+                DateTimeOffset.UtcNow));
+    }
+
+    [Fact]
+    public void RemoveEntry_ShouldRemoveExistingEntry()
+    {
+        var result = CreateResult();
+
+        var entryId = result.AddEntry(
+            "Purity",
+            ResultValueType.Numeric,
+            null,
+            98m,
+            "%",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+
+        result.RemoveEntry(entryId, DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.Empty(result.Entries);
+    }
+
+    [Fact]
+    public void RemoveEntry_ShouldRejectUnknownEntryId()
+    {
+        var result = CreateResult();
+
+        Assert.Throws<AnalysisResultDomainException>(() =>
+            result.RemoveEntry(Guid.NewGuid(), DateTimeOffset.UtcNow));
     }
 }

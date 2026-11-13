@@ -1,7 +1,6 @@
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Requests.Commands;
 using LIMS.Application.Requests.Repositories;
 
@@ -37,7 +36,7 @@ public sealed class StartSampleRequestReviewCommandHandler
 
         request.StartReview(
             command.ReviewerUserId,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(request);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

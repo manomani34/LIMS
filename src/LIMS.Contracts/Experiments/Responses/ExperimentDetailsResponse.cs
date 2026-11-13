@@ -11,7 +11,7 @@ public sealed record ExperimentDetailsResponse(
     string CreatedByUserId,
     string? AssignedToUserId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt,
+    DateTimeOffset? UpdatedAt,
     DateTimeOffset? StartedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset? ArchivedAt);

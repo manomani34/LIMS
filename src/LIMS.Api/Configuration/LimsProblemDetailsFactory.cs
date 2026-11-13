@@ -1,5 +1,7 @@
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace LIMS.Api.Configuration;
 
@@ -29,14 +31,14 @@ public sealed class LimsProblemDetailsFactory : ProblemDetailsFactory
 
     public override ValidationProblemDetails CreateValidationProblemDetails(
         HttpContext httpContext,
-        IDictionary<string, string[]> errors,
+        ModelStateDictionary modelStateDictionary,
         int? statusCode = null,
         string? title = null,
         string? type = null,
         string? detail = null,
         string? instance = null)
     {
-        var problem = new ValidationProblemDetails(errors)
+        var problem = new ValidationProblemDetails(modelStateDictionary)
         {
             Status = statusCode ?? StatusCodes.Status400BadRequest,
             Title = title ?? "One or more validation errors occurred.",

@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Workflows.Events;
 
@@ -7,4 +7,5 @@ public sealed record WorkflowInstanceStartedDomainEvent(
     Guid WorkflowDefinitionId,
     string StartedByUserId,
     DateTime StartedAt,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

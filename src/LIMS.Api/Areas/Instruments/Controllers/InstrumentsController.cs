@@ -1,6 +1,8 @@
-using LIMS.Application.Common.Dispatching;
+
+using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Instruments.Commands;
 using LIMS.Application.Instruments.Queries;
+using LIMS.Contracts.Common;
 using LIMS.Contracts.Instruments;
 using LIMS.Contracts.Instruments.Mappings;
 using LIMS.Contracts.Instruments.Requests;
@@ -16,20 +18,19 @@ namespace LIMS.Api.Areas.Instruments.Controllers;
 public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterInstrumentRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await dispatcher.SendAsync(
+        var instrumentId = await dispatcher.SendAsync<RegisterInstrumentCommand, Guid>(
             new RegisterInstrumentCommand(
                 request.LaboratoryId,
                 request.InstrumentCode,
                 request.Name,
                 request.Type.ToDomain(),
-                request.RegisteredByUserId,
                 request.Manufacturer,
                 request.Model,
                 request.SerialNumber,
@@ -37,7 +38,10 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
                 request.Description),
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { instrumentId = id }, new { id });
+        return CreatedAtAction(
+            nameof(GetById),
+            new { instrumentId },
+            new ResourceIdResponse(instrumentId));
     }
 
     [HttpGet("{instrumentId:guid}")]
@@ -47,16 +51,15 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid instrumentId,
         CancellationToken cancellationToken)
     {
-        var result = await dispatcher.QueryAsync(
-            new GetInstrumentByIdQuery(instrumentId),
-            cancellationToken);
+        var result = await dispatcher.QueryAsync<
+            GetInstrumentByIdQuery,
+            LIMS.Application.Instruments.DTOs.InstrumentDetailsDto?>(
+                new GetInstrumentByIdQuery(instrumentId),
+                cancellationToken);
 
-        if (result is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(ToDetailsResponse(result));
+        return result is null
+            ? NotFound()
+            : Ok(ToDetailsResponse(result));
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{instrumentCode}")]
@@ -67,11 +70,15 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         string instrumentCode,
         CancellationToken cancellationToken)
     {
-        var result = await dispatcher.QueryAsync(
-            new GetInstrumentByCodeQuery(laboratoryId, instrumentCode),
-            cancellationToken);
+        var result = await dispatcher.QueryAsync<
+            GetInstrumentByCodeQuery,
+            LIMS.Application.Instruments.DTOs.InstrumentDto?>(
+                new GetInstrumentByCodeQuery(laboratoryId, instrumentCode),
+                cancellationToken);
 
-        return result is null ? NotFound() : Ok(ToResponse(result));
+        return result is null
+            ? NotFound()
+            : Ok(ToResponse(result));
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
@@ -80,9 +87,11 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await dispatcher.QueryAsync(
-            new GetInstrumentsByLaboratoryIdQuery(laboratoryId),
-            cancellationToken);
+        var results = await dispatcher.QueryAsync<
+            GetInstrumentsByLaboratoryIdQuery,
+            IReadOnlyCollection<LIMS.Application.Instruments.DTOs.InstrumentDto>>(
+                new GetInstrumentsByLaboratoryIdQuery(laboratoryId),
+                cancellationToken);
 
         return Ok(results.Select(ToResponse).ToArray());
     }
@@ -97,12 +106,19 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     {
         if (!Enum.IsDefined(status))
         {
-            return BadRequest();
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid instrument status",
+                Detail = "The specified instrument status is invalid."
+            });
         }
 
-        var results = await dispatcher.QueryAsync(
-            new GetInstrumentsByStatusQuery(laboratoryId, status.ToDomain()),
-            cancellationToken);
+        var results = await dispatcher.QueryAsync<
+            GetInstrumentsByStatusQuery,
+            IReadOnlyCollection<LIMS.Application.Instruments.DTOs.InstrumentDto>>(
+                new GetInstrumentsByStatusQuery(laboratoryId, status.ToDomain()),
+                cancellationToken);
 
         return Ok(results.Select(ToResponse).ToArray());
     }
@@ -110,13 +126,13 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     [HttpPut("{instrumentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(
         Guid instrumentId,
         [FromBody] UpdateInstrumentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<UpdateInstrumentInformationCommand, bool>(
             new UpdateInstrumentInformationCommand(
                 instrumentId,
                 request.Name,
@@ -138,7 +154,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid instrumentId,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<MarkInstrumentInUseCommand, bool>(
             new MarkInstrumentInUseCommand(instrumentId),
             cancellationToken);
 
@@ -152,7 +168,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid instrumentId,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<MarkInstrumentAvailableCommand, bool>(
             new MarkInstrumentAvailableCommand(instrumentId),
             cancellationToken);
 
@@ -160,15 +176,15 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/maintenance")]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ScheduleMaintenance(
         Guid instrumentId,
         [FromBody] ScheduleInstrumentMaintenanceRequest request,
         CancellationToken cancellationToken)
     {
-        var maintenanceId = await dispatcher.SendAsync(
+        var maintenanceId = await dispatcher.SendAsync<ScheduleInstrumentMaintenanceCommand, Guid>(
             new ScheduleInstrumentMaintenanceCommand(
                 instrumentId,
                 request.Type.ToDomain(),
@@ -180,20 +196,20 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         return CreatedAtAction(
             nameof(GetById),
             new { instrumentId },
-            new { maintenanceId });
+            new ResourceIdResponse(maintenanceId));
     }
 
     [HttpPost("{instrumentId:guid}/maintenance/{maintenanceId:guid}/complete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CompleteMaintenance(
         Guid instrumentId,
         Guid maintenanceId,
         [FromBody] CompleteInstrumentMaintenanceRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<CompleteInstrumentMaintenanceCommand, bool>(
             new CompleteInstrumentMaintenanceCommand(
                 instrumentId,
                 maintenanceId,
@@ -207,13 +223,13 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     [HttpPost("{instrumentId:guid}/out-of-service")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> MarkOutOfService(
         Guid instrumentId,
         [FromBody] MarkInstrumentOutOfServiceRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<MarkInstrumentOutOfServiceCommand, bool>(
             new MarkInstrumentOutOfServiceCommand(instrumentId, request.Reason),
             cancellationToken);
 
@@ -227,7 +243,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid instrumentId,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<RestoreInstrumentServiceCommand, bool>(
             new RestoreInstrumentServiceCommand(instrumentId),
             cancellationToken);
 
@@ -241,7 +257,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
         Guid instrumentId,
         CancellationToken cancellationToken)
     {
-        var updated = await dispatcher.SendAsync(
+        var updated = await dispatcher.SendAsync<RetireInstrumentCommand, bool>(
             new RetireInstrumentCommand(instrumentId),
             cancellationToken);
 

@@ -29,6 +29,7 @@ public sealed class GetSamplesByAssignedUserIdQueryHandler
             sample.SampleCode,
             sample.Name,
             sample.Description,
+            sample.RejectionReason,
             sample.Type,
             sample.Status,
             sample.Priority,

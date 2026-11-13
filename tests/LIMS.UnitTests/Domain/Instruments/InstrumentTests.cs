@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Instruments;
 using LIMS.Domain.Instruments.Enums;
 
@@ -16,12 +17,12 @@ public sealed class InstrumentTests
             "NMR-001",
             "NMR Spectrometer",
             InstrumentType.NmrSpectrometer,
-            registeredAt ?? DateTimeOffset.UtcNow,
             "Bruker",
             "AVANCE III",
             "SN-12345",
             "Chemistry Laboratory",
-            "300 MHz spectrometer");
+            "300 MHz spectrometer",
+            registeredAt ?? DateTimeOffset.UtcNow);
     }
 
     [Fact]
@@ -49,12 +50,12 @@ public sealed class InstrumentTests
             "  nmr-001  ",
             "NMR Spectrometer",
             InstrumentType.NmrSpectrometer,
-            DateTimeOffset.UtcNow,
             null,
             null,
             null,
             null,
-            null);
+            null,
+            DateTimeOffset.UtcNow);
 
         Assert.Equal("NMR-001", instrument.InstrumentCode);
     }
@@ -68,12 +69,12 @@ public sealed class InstrumentTests
                 "NMR-001",
                 "NMR Spectrometer",
                 InstrumentType.NmrSpectrometer,
-                DateTimeOffset.UtcNow,
                 null,
                 null,
                 null,
                 null,
-                null));
+                null,
+                DateTimeOffset.UtcNow));
     }
 
     [Fact]
@@ -85,12 +86,12 @@ public sealed class InstrumentTests
                 "NMR 001",
                 "NMR Spectrometer",
                 InstrumentType.NmrSpectrometer,
-                DateTimeOffset.UtcNow,
                 null,
                 null,
                 null,
                 null,
-                null));
+                null,
+                DateTimeOffset.UtcNow));
     }
 
     [Fact]

@@ -33,6 +33,7 @@ public sealed class GetSampleByCodeQueryHandler
             sample.SampleCode,
             sample.Name,
             sample.Description,
+            sample.RejectionReason,
             sample.Type,
             sample.Status,
             sample.Priority,

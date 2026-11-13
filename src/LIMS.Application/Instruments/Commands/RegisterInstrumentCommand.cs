@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Domain.Instruments.Enums;
 
@@ -12,5 +13,4 @@ public sealed record RegisterInstrumentCommand(
     string? Model,
     string? SerialNumber,
     string? Location,
-    string? Description,
-    DateTimeOffset RegisteredAt) : ICommand<Guid>;
+    string? Description) : ICommand<Guid>;

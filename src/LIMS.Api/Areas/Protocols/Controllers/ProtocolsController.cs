@@ -29,8 +29,7 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] CreateProtocolRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await _dispatcher.SendAsync(
-            new CreateProtocolCommand(
+        var id = await _dispatcher.SendAsync<CreateProtocolCommand, Guid>(new CreateProtocolCommand(
                 request.LaboratoryId,
                 request.ProtocolCode,
                 request.Name,
@@ -52,8 +51,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetProtocolByIdQuery(protocolId),
+        var result = await _dispatcher.QueryAsync<GetProtocolByIdQuery, LIMS.Application.Protocols.DTOs.ProtocolDetailsDto?>(new GetProtocolByIdQuery(protocolId),
             cancellationToken);
 
         return result is null
@@ -69,8 +67,7 @@ public sealed class ProtocolsController : ControllerBase
         string protocolCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync(
-            new GetProtocolByCodeQuery(laboratoryId, protocolCode),
+        var result = await _dispatcher.QueryAsync<GetProtocolByCodeQuery, LIMS.Application.Protocols.DTOs.ProtocolDto?>(new GetProtocolByCodeQuery(laboratoryId, protocolCode),
             cancellationToken);
 
         return result is null
@@ -84,8 +81,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync(
-            new GetProtocolsByLaboratoryIdQuery(laboratoryId),
+        var results = await _dispatcher.QueryAsync<GetProtocolsByLaboratoryIdQuery, IReadOnlyCollection<LIMS.Application.Protocols.DTOs.ProtocolDto>>(new GetProtocolsByLaboratoryIdQuery(laboratoryId),
             cancellationToken);
 
         return Ok(results.Select(Map).ToArray());
@@ -101,8 +97,7 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] UpdateProtocolRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new UpdateProtocolInformationCommand(
+        var updated = await _dispatcher.SendAsync<UpdateProtocolInformationCommand, bool>(new UpdateProtocolInformationCommand(
                 protocolId,
                 request.Name,
                 request.Description,
@@ -122,8 +117,7 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] AddProtocolStepRequest request,
         CancellationToken cancellationToken)
     {
-        var stepId = await _dispatcher.SendAsync(
-            new AddProtocolStepCommand(
+        var stepId = await _dispatcher.SendAsync<AddProtocolStepCommand, Guid>(new AddProtocolStepCommand(
                 protocolId,
                 request.Sequence,
                 request.Title,
@@ -154,8 +148,7 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] UpdateProtocolStepRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new UpdateProtocolStepCommand(
+        var updated = await _dispatcher.SendAsync<UpdateProtocolStepCommand, bool>(new UpdateProtocolStepCommand(
                 protocolId,
                 stepId,
                 request.Sequence,
@@ -182,8 +175,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid stepId,
         CancellationToken cancellationToken)
     {
-        var removed = await _dispatcher.SendAsync(
-            new RemoveProtocolStepCommand(protocolId, stepId),
+        var removed = await _dispatcher.SendAsync<RemoveProtocolStepCommand, bool>(new RemoveProtocolStepCommand(protocolId, stepId),
             cancellationToken);
 
         return removed ? NoContent() : NotFound();
@@ -197,8 +189,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var activated = await _dispatcher.SendAsync(
-            new ActivateProtocolCommand(protocolId),
+        var activated = await _dispatcher.SendAsync<ActivateProtocolCommand, bool>(new ActivateProtocolCommand(protocolId),
             cancellationToken);
 
         return activated ? NoContent() : NotFound();
@@ -212,8 +203,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var deprecated = await _dispatcher.SendAsync(
-            new DeprecateProtocolCommand(protocolId),
+        var deprecated = await _dispatcher.SendAsync<DeprecateProtocolCommand, bool>(new DeprecateProtocolCommand(protocolId),
             cancellationToken);
 
         return deprecated ? NoContent() : NotFound();
@@ -227,8 +217,7 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var archived = await _dispatcher.SendAsync(
-            new ArchiveProtocolCommand(protocolId),
+        var archived = await _dispatcher.SendAsync<ArchiveProtocolCommand, bool>(new ArchiveProtocolCommand(protocolId),
             cancellationToken);
 
         return archived ? NoContent() : NotFound();

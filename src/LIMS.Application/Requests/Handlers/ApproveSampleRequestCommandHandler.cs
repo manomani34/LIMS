@@ -3,20 +3,6 @@ using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
 using LIMS.Application.Requests.Commands;
 using LIMS.Application.Requests.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LIMS.Application.Requests.Handlers;
-
-internal class ApproveSampleRequestCommandHandler
-{
-}
-using LIMS.Application.Abstractions.Persistence;
-using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Abstractions.Messaging;
-using LIMS.Application.Requests.Commands;
-using LIMS.Application.Requests.Repositories;
 
 namespace LIMS.Application.Requests.Handlers;
 
@@ -52,9 +38,10 @@ public sealed class ApproveSampleRequestCommandHandler
             command.ApprovedByUserId,
             command.LaboratoryId,
             command.Comments,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         _repository.Update(request);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;

@@ -9,17 +9,23 @@ public sealed class UpdateProtocolInformationCommandValidator
     public UpdateProtocolInformationCommandValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
 
         RuleFor(x => x.Name)
-            .NotEmpty("Name is required.")
-            .MaximumLength(200, "Name cannot exceed 200 characters.");
+            .NotEmpty()
+            .WithMessage("Name is required.")
+            .MaximumLength(200)
+            .WithMessage("Name cannot exceed 200 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(4000, "Description cannot exceed 4000 characters.");
+            .MaximumLength(4000)
+            .WithMessage("Description cannot exceed 4000 characters.");
 
         RuleFor(x => x.Version)
-            .NotEmpty("Version is required.")
-            .MaximumLength(50, "Version cannot exceed 50 characters.");
+            .NotEmpty()
+            .WithMessage("Version is required.")
+            .MaximumLength(50)
+            .WithMessage("Version cannot exceed 50 characters.");
     }
 }

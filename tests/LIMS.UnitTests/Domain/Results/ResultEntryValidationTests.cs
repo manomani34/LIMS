@@ -1,6 +1,5 @@
 using LIMS.Domain.Results;
 using LIMS.Domain.Results.Enums;
-using LIMS.Domain.Results.Exceptions;
 using Xunit;
 
 namespace LIMS.UnitTests.Results;

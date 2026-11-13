@@ -1,6 +1,5 @@
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Results.Commands;
-using LIMS.Application.Abstractions.Validation;
 using LIMS.Domain.Results.Enums;
 
 namespace LIMS.Application.Results.Validators;

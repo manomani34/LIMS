@@ -29,6 +29,7 @@ public sealed class GetSamplesByLaboratoryIdQueryHandler
             sample.SampleCode,
             sample.Name,
             sample.Description,
+            sample.RejectionReason,
             sample.Type,
             sample.Status,
             sample.Priority,

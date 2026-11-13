@@ -1,11 +1,15 @@
+using LIMS.Api.Exceptions;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Inventory.Commands;
+using LIMS.Application.Inventory.DTOs;
 using LIMS.Application.Inventory.Queries;
+using LIMS.Contracts.Common;
+using LIMS.Contracts.Inventory.Enums;
 using LIMS.Contracts.Inventory.Mappings;
 using LIMS.Contracts.Inventory.Requests;
 using LIMS.Contracts.Inventory.Responses;
-using LIMS.Domain.Inventory.Enums;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LIMS.Api.Areas.Inventory.Controllers;
 
@@ -23,9 +27,15 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(
+        typeof(ResourceIdResponse),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateInventoryItemRequest request,
         CancellationToken cancellationToken)
@@ -33,7 +43,7 @@ public sealed class InventoryController : ControllerBase
         if (!Enum.IsDefined(request.Type))
             return BadRequest("Inventory item type is invalid.");
 
-        var id = await _dispatcher.SendAsync(
+        var id = await _dispatcher.SendAsync<CreateInventoryItemCommand, Guid>(
             new CreateInventoryItemCommand(
                 request.LaboratoryId,
                 request.ItemCode,
@@ -52,17 +62,21 @@ public sealed class InventoryController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { inventoryItemId = id },
-            new { id });
+            new ResourceIdResponse(id));
     }
 
     [HttpGet("{inventoryItemId:guid}")]
-    [ProducesResponseType(typeof(InventoryItemDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(InventoryItemDetailsResponse),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid inventoryItemId,
         CancellationToken cancellationToken)
     {
-        var item = await _dispatcher.QueryAsync(
+        var item = await _dispatcher.QueryAsync<
+            GetInventoryItemByIdQuery,
+            InventoryItemDetailsDto?>(
             new GetInventoryItemByIdQuery(inventoryItemId),
             cancellationToken);
 
@@ -72,14 +86,18 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{itemCode}")]
-    [ProducesResponseType(typeof(InventoryItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(InventoryItemResponse),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
         Guid laboratoryId,
         string itemCode,
         CancellationToken cancellationToken)
     {
-        var item = await _dispatcher.QueryAsync(
+        var item = await _dispatcher.QueryAsync<
+            GetInventoryItemByCodeQuery,
+            InventoryItemDto?>(
             new GetInventoryItemByCodeQuery(laboratoryId, itemCode),
             cancellationToken);
 
@@ -89,20 +107,36 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<InventoryItemResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<InventoryItemResponse>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
-        [FromQuery] InventoryItemStatus? status,
-        [FromQuery] InventoryItemType? type,
+        [FromQuery] InventoryItemStatusContract? status,
+        [FromQuery] InventoryItemTypeContract? type,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        var items = await _dispatcher.QueryAsync(
+        if (status.HasValue && !Enum.IsDefined(status.Value))
+            return BadRequest("Inventory item status is invalid.");
+
+        if (type.HasValue && !Enum.IsDefined(type.Value))
+            return BadRequest("Inventory item type is invalid.");
+
+        if (pageNumber < 1 || pageSize is < 1 or > 200)
+            return BadRequest("Invalid pagination parameters.");
+
+        var items = await _dispatcher.QueryAsync<
+            GetInventoryItemsByLaboratoryQuery,
+            IReadOnlyCollection<InventoryItemDto>>(
             new GetInventoryItemsByLaboratoryQuery(
                 laboratoryId,
-                status,
-                type,
+                status.HasValue ? status.Value.ToDomain() : null,
+                type.HasValue ? type.Value.ToDomain() : null,
                 pageNumber,
                 pageSize),
             cancellationToken);
@@ -112,8 +146,13 @@ public sealed class InventoryController : ControllerBase
 
     [HttpPut("{inventoryItemId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         Guid inventoryItemId,
         [FromBody] UpdateInventoryItemRequest request,
@@ -122,7 +161,9 @@ public sealed class InventoryController : ControllerBase
         if (!Enum.IsDefined(request.Type))
             return BadRequest("Inventory item type is invalid.");
 
-        var updated = await _dispatcher.SendAsync(
+        var updated = await _dispatcher.SendAsync<
+            UpdateInventoryItemCommand,
+            bool>(
             new UpdateInventoryItemCommand(
                 inventoryItemId,
                 request.Name,
@@ -141,9 +182,17 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ResourceIdResponse),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReceiveStock(
         Guid inventoryItemId,
         [FromBody] ReceiveInventoryStockRequest request,
@@ -151,7 +200,9 @@ public sealed class InventoryController : ControllerBase
     {
         var userId = GetCurrentUserId();
 
-        var lotId = await _dispatcher.SendAsync(
+        var lotId = await _dispatcher.SendAsync<
+            ReceiveInventoryStockCommand,
+            Guid>(
             new ReceiveInventoryStockCommand(
                 inventoryItemId,
                 request.LotNumber,
@@ -170,21 +221,29 @@ public sealed class InventoryController : ControllerBase
                 request.Notes),
             cancellationToken);
 
-        return Created(
-            $"/api/v1/inventory/{inventoryItemId}/lots/{lotId}",
-            new { lotId });
+        return StatusCode(
+            StatusCodes.Status201Created,
+            new ResourceIdResponse(lotId));
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/consume")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ConsumeStock(
         Guid inventoryItemId,
         [FromBody] ConsumeInventoryStockRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            ConsumeInventoryStockCommand,
+            bool>(
             new ConsumeInventoryStockCommand(
                 inventoryItemId,
                 request.LotId,
@@ -199,14 +258,22 @@ public sealed class InventoryController : ControllerBase
 
     [HttpPost("{inventoryItemId:guid}/lots/adjust")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AdjustStock(
         Guid inventoryItemId,
         [FromBody] AdjustInventoryStockRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            AdjustInventoryStockCommand,
+            bool>(
             new AdjustInventoryStockCommand(
                 inventoryItemId,
                 request.LotId,
@@ -222,12 +289,17 @@ public sealed class InventoryController : ControllerBase
     [HttpPost("{inventoryItemId:guid}/lots/quarantine")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> QuarantineLot(
         Guid inventoryItemId,
         [FromQuery] Guid lotId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            QuarantineInventoryLotCommand,
+            bool>(
             new QuarantineInventoryLotCommand(inventoryItemId, lotId),
             cancellationToken);
 
@@ -237,12 +309,17 @@ public sealed class InventoryController : ControllerBase
     [HttpPost("{inventoryItemId:guid}/lots/release")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReleaseLot(
         Guid inventoryItemId,
         [FromQuery] Guid lotId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            ReleaseInventoryLotCommand,
+            bool>(
             new ReleaseInventoryLotCommand(inventoryItemId, lotId),
             cancellationToken);
 
@@ -251,13 +328,22 @@ public sealed class InventoryController : ControllerBase
 
     [HttpPost("{inventoryItemId:guid}/lots/dispose")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        typeof(ValidationErrorResponse),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DisposeLot(
         Guid inventoryItemId,
         [FromBody] DisposeInventoryLotRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            DisposeInventoryLotCommand,
+            bool>(
             new DisposeInventoryLotCommand(
                 inventoryItemId,
                 request.LotId,
@@ -271,11 +357,16 @@ public sealed class InventoryController : ControllerBase
     [HttpPost("{inventoryItemId:guid}/deactivate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Deactivate(
         Guid inventoryItemId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            DeactivateInventoryItemCommand,
+            bool>(
             new DeactivateInventoryItemCommand(inventoryItemId),
             cancellationToken);
 
@@ -285,11 +376,16 @@ public sealed class InventoryController : ControllerBase
     [HttpPost("{inventoryItemId:guid}/reactivate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Reactivate(
         Guid inventoryItemId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            ReactivateInventoryItemCommand,
+            bool>(
             new ReactivateInventoryItemCommand(inventoryItemId),
             cancellationToken);
 
@@ -299,11 +395,16 @@ public sealed class InventoryController : ControllerBase
     [HttpPost("{inventoryItemId:guid}/discontinue")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ErrorResponse),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Discontinue(
         Guid inventoryItemId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.SendAsync(
+        var result = await _dispatcher.SendAsync<
+            DiscontinueInventoryItemCommand,
+            bool>(
             new DiscontinueInventoryItemCommand(inventoryItemId),
             cancellationToken);
 
@@ -312,9 +413,7 @@ public sealed class InventoryController : ControllerBase
 
     private string GetCurrentUserId()
     {
-        return User.FindFirst(
-                   System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-               ?? throw new UnauthorizedAccessException(
-                   "Authenticated user ID is unavailable.");
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new AuthenticatedUserIdUnavailableException();
     }
 }

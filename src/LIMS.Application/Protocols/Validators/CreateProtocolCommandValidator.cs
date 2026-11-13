@@ -9,25 +9,35 @@ public sealed class CreateProtocolCommandValidator
     public CreateProtocolCommandValidator()
     {
         RuleFor(x => x.LaboratoryId)
-            .Must(x => x != Guid.Empty, "LaboratoryId is required.");
+            .NotEmpty()
+            .WithMessage("LaboratoryId is required.");
 
         RuleFor(x => x.ProtocolCode)
-            .NotEmpty("ProtocolCode is required.")
-            .MaximumLength(50, "ProtocolCode cannot exceed 50 characters.");
+            .NotEmpty()
+            .WithMessage("ProtocolCode is required.")
+            .MaximumLength(50)
+            .WithMessage("ProtocolCode cannot exceed 50 characters.");
 
         RuleFor(x => x.Name)
-            .NotEmpty("Name is required.")
-            .MaximumLength(200, "Name cannot exceed 200 characters.");
+            .NotEmpty()
+            .WithMessage("Name is required.")
+            .MaximumLength(200)
+            .WithMessage("Name cannot exceed 200 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(4000, "Description cannot exceed 4000 characters.");
+            .MaximumLength(4000)
+            .WithMessage("Description cannot exceed 4000 characters.");
 
         RuleFor(x => x.Version)
-            .NotEmpty("Version is required.")
-            .MaximumLength(50, "Version cannot exceed 50 characters.");
+            .NotEmpty()
+            .WithMessage("Version is required.")
+            .MaximumLength(50)
+            .WithMessage("Version cannot exceed 50 characters.");
 
         RuleFor(x => x.CreatedByUserId)
-            .NotEmpty("CreatedByUserId is required.")
-            .MaximumLength(150, "CreatedByUserId cannot exceed 150 characters.");
+            .NotEmpty()
+            .WithMessage("CreatedByUserId is required.")
+            .MaximumLength(150)
+            .WithMessage("CreatedByUserId cannot exceed 150 characters.");
     }
 }

@@ -56,6 +56,19 @@ public sealed class InventoryLot : Entity<Guid>
             throw new InventoryDomainException(
                 "Lot number is required.");
 
+        if (lotNumber.Trim().Length > 100)
+            throw new InventoryDomainException(
+                "Lot number cannot exceed 100 characters.");
+
+        ValidateOptionalLength(supplier, 200, nameof(supplier));
+        ValidateOptionalLength(manufacturer, 200, nameof(manufacturer));
+        ValidateOptionalLength(storageLocation, 200, nameof(storageLocation));
+        ValidateOptionalLength(storageConditions, 1000, nameof(storageConditions));
+        ValidateOptionalLength(
+            certificateOfAnalysisNumber,
+            150,
+            nameof(certificateOfAnalysisNumber));
+
         if (quantity <= 0)
             throw new InventoryDomainException(
                 "Received quantity must be greater than zero.");
@@ -63,6 +76,10 @@ public sealed class InventoryLot : Entity<Guid>
         if (string.IsNullOrWhiteSpace(unit))
             throw new InventoryDomainException(
                 "Unit is required.");
+
+        if (unit.Trim().Length > 30)
+            throw new InventoryDomainException(
+                "Unit cannot exceed 30 characters.");
 
         if (minimumStockLevel < 0)
             throw new InventoryDomainException(
@@ -75,6 +92,13 @@ public sealed class InventoryLot : Entity<Guid>
             throw new InventoryDomainException(
                 "Expiry date cannot be earlier than manufacture date.");
         }
+
+        var receivedDate = DateOnly.FromDateTime(receivedAt);
+
+        var initialStatus =
+            expiryDate.HasValue && expiryDate.Value < receivedDate
+                ? InventoryLotStatus.Expired
+                : InventoryLotStatus.Available;
 
         return new InventoryLot
         {
@@ -92,13 +116,22 @@ public sealed class InventoryLot : Entity<Guid>
             StorageConditions = NormalizeOptional(storageConditions),
             CertificateOfAnalysisNumber =
                 NormalizeOptional(certificateOfAnalysisNumber),
-            Status = InventoryLotStatus.Available,
+            Status = initialStatus,
             ReceivedAt = receivedAt
         };
     }
 
-    internal void Consume(decimal quantity)
+    internal void Consume(
+        decimal quantity,
+        DateOnly currentDate)
     {
+        if (ExpiryDate.HasValue &&
+            ExpiryDate.Value < currentDate)
+        {
+            throw new InventoryDomainException(
+                "Expired inventory lots cannot be consumed.");
+        }
+
         EnsureAvailable();
 
         if (quantity <= 0)
@@ -117,18 +150,20 @@ public sealed class InventoryLot : Entity<Guid>
 
     internal void IncreaseQuantity(decimal quantity)
     {
-        EnsureAvailable();
+        EnsureAdjustable();
 
         if (quantity <= 0)
             throw new InventoryDomainException(
                 "Adjustment quantity must be greater than zero.");
 
         AvailableQuantity += quantity;
+
+        // An expired lot remains expired after adjustment.
     }
 
     internal void DecreaseQuantity(decimal quantity)
     {
-        EnsureAvailable();
+        EnsureAdjustable();
 
         if (quantity <= 0)
             throw new InventoryDomainException(
@@ -142,11 +177,20 @@ public sealed class InventoryLot : Entity<Guid>
 
         if (AvailableQuantity == 0)
             Status = InventoryLotStatus.Depleted;
+
+        // An expired lot with remaining quantity stays expired.
     }
 
     internal void Quarantine()
     {
-        EnsureAvailable();
+        if (Status is not (
+            InventoryLotStatus.Available or
+            InventoryLotStatus.Expired))
+        {
+            throw new InventoryDomainException(
+                "Only available or expired lots can be quarantined.");
+        }
+
         Status = InventoryLotStatus.Quarantined;
     }
 
@@ -171,7 +215,6 @@ public sealed class InventoryLot : Entity<Guid>
     internal decimal Dispose()
     {
         if (Status is InventoryLotStatus.Disposed
-            or InventoryLotStatus.Expired
             or InventoryLotStatus.Depleted)
         {
             throw new InventoryDomainException(
@@ -191,6 +234,29 @@ public sealed class InventoryLot : Entity<Guid>
         if (Status != InventoryLotStatus.Available)
             throw new InventoryDomainException(
                 "The selected lot is not available for this operation.");
+    }
+
+    private void EnsureAdjustable()
+    {
+        if (Status is not (
+            InventoryLotStatus.Available or
+            InventoryLotStatus.Expired))
+        {
+            throw new InventoryDomainException(
+                "Only available or expired lots can be adjusted.");
+        }
+    }
+
+    private static void ValidateOptionalLength(
+        string? value,
+        int maximumLength,
+        string propertyName)
+    {
+        if (value?.Trim().Length > maximumLength)
+        {
+            throw new InventoryDomainException(
+                $"{propertyName} cannot exceed {maximumLength} characters.");
+        }
     }
 
     private static string? NormalizeOptional(string? value)

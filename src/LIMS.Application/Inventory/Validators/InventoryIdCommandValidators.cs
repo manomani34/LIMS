@@ -1,16 +1,37 @@
+
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Inventory.Commands;
 
 namespace LIMS.Application.Inventory.Validators;
 
-public sealed class InventoryItemIdCommandValidator<TCommand>
-    : AbstractValidator<TCommand>
-    where TCommand : class
+public sealed class DeactivateInventoryItemCommandValidator
+    : AbstractValidator<DeactivateInventoryItemCommand>
 {
-    public InventoryItemIdCommandValidator(
-        Func<TCommand, Guid> idSelector)
+    public DeactivateInventoryItemCommandValidator()
     {
-        RuleForSelector(idSelector, "InventoryItemId")
+        RuleFor(x => x.InventoryItemId)
+            .Must(x => x != Guid.Empty)
+            .WithMessage("Inventory item ID is required.");
+    }
+}
+
+public sealed class ReactivateInventoryItemCommandValidator
+    : AbstractValidator<ReactivateInventoryItemCommand>
+{
+    public ReactivateInventoryItemCommandValidator()
+    {
+        RuleFor(x => x.InventoryItemId)
+            .Must(x => x != Guid.Empty)
+            .WithMessage("Inventory item ID is required.");
+    }
+}
+
+public sealed class DiscontinueInventoryItemCommandValidator
+    : AbstractValidator<DiscontinueInventoryItemCommand>
+{
+    public DiscontinueInventoryItemCommandValidator()
+    {
+        RuleFor(x => x.InventoryItemId)
             .Must(x => x != Guid.Empty)
             .WithMessage("Inventory item ID is required.");
     }
@@ -61,10 +82,12 @@ public sealed class DisposeInventoryLotCommandValidator
 
         RuleFor(x => x.PerformedByUserId)
             .NotEmpty()
-            .MaximumLength(150);
+            .MaximumLength(150)
+            .WithMessage("Performing user identifier is required and cannot exceed 150 characters.");
 
         RuleFor(x => x.Reason)
             .NotEmpty()
-            .MaximumLength(2000);
+            .MaximumLength(2000)
+            .WithMessage("Disposal reason is required and cannot exceed 2000 characters.");
     }
 }

@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Requests.Events;
 
@@ -6,4 +6,5 @@ public sealed record SampleRequestCreatedDomainEvent(
     Guid RequestId,
     string RequestCode,
     string RequestedByUserId,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

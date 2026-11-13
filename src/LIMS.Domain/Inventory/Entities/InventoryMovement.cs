@@ -46,6 +46,10 @@ public sealed class InventoryMovement : Entity<Guid>
             throw new InventoryDomainException(
                 "Lot identifier is required.");
 
+        if (!Enum.IsDefined(type))
+            throw new InventoryDomainException(
+                "Invalid inventory movement type.");
+
         if (quantity <= 0)
             throw new InventoryDomainException(
                 "Movement quantity must be greater than zero.");
@@ -58,9 +62,24 @@ public sealed class InventoryMovement : Entity<Guid>
             throw new InventoryDomainException(
                 "Movement unit is required.");
 
+        if (unit.Trim().Length > 30)
+            throw new InventoryDomainException(
+                "Movement unit cannot exceed 30 characters.");
+
         if (string.IsNullOrWhiteSpace(performedByUserId))
             throw new InventoryDomainException(
                 "Performing user identifier is required.");
+
+        if (performedByUserId.Trim().Length > 150)
+            throw new InventoryDomainException(
+                "Performing user identifier cannot exceed 150 characters.");
+
+        if (experimentId == Guid.Empty)
+            throw new InventoryDomainException(
+                "Experiment identifier cannot be empty.");
+
+        ValidateOptionalLength(referenceNumber, 150, nameof(referenceNumber));
+        ValidateOptionalLength(notes, 2000, nameof(notes));
 
         return new InventoryMovement
         {
@@ -76,6 +95,18 @@ public sealed class InventoryMovement : Entity<Guid>
             Notes = NormalizeOptional(notes),
             OccurredAt = occurredAt
         };
+    }
+
+    private static void ValidateOptionalLength(
+        string? value,
+        int maximumLength,
+        string propertyName)
+    {
+        if (value?.Trim().Length > maximumLength)
+        {
+            throw new InventoryDomainException(
+                $"{propertyName} cannot exceed {maximumLength} characters.");
+        }
     }
 
     private static string? NormalizeOptional(string? value)

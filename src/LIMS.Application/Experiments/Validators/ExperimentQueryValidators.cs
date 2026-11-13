@@ -9,7 +9,8 @@ public sealed class GetExperimentByIdQueryValidator
     public GetExperimentByIdQueryValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
     }
 }
 
@@ -19,11 +20,14 @@ public sealed class GetExperimentByCodeQueryValidator
     public GetExperimentByCodeQueryValidator()
     {
         RuleFor(x => x.LaboratoryId)
-            .Must(x => x != Guid.Empty, "LaboratoryId is required.");
+            .NotEmpty()
+            .WithMessage("LaboratoryId is required.");
 
         RuleFor(x => x.ExperimentCode)
-            .NotEmpty("ExperimentCode is required.")
-            .MaximumLength(50, "ExperimentCode cannot exceed 50 characters.");
+            .NotEmpty()
+            .WithMessage("ExperimentCode is required.")
+            .MaximumLength(50)
+            .WithMessage("ExperimentCode cannot exceed 50 characters.");
     }
 }
 
@@ -33,7 +37,8 @@ public sealed class GetExperimentsByLaboratoryIdQueryValidator
     public GetExperimentsByLaboratoryIdQueryValidator()
     {
         RuleFor(x => x.LaboratoryId)
-            .Must(x => x != Guid.Empty, "LaboratoryId is required.");
+            .NotEmpty()
+            .WithMessage("LaboratoryId is required.");
     }
 }
 
@@ -43,7 +48,8 @@ public sealed class GetExperimentsBySampleIdQueryValidator
     public GetExperimentsBySampleIdQueryValidator()
     {
         RuleFor(x => x.SampleId)
-            .Must(x => x != Guid.Empty, "SampleId is required.");
+            .NotEmpty()
+            .WithMessage("SampleId is required.");
     }
 }
 
@@ -53,7 +59,9 @@ public sealed class GetExperimentsByAssignedUserIdQueryValidator
     public GetExperimentsByAssignedUserIdQueryValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty("UserId is required.")
-            .MaximumLength(150, "UserId cannot exceed 150 characters.");
+            .NotEmpty()
+            .WithMessage("UserId is required.")
+            .MaximumLength(150)
+            .WithMessage("UserId cannot exceed 150 characters.");
     }
 }

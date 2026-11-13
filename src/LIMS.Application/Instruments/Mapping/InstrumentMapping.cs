@@ -1,48 +1,72 @@
-using LIMS.Application.Abstractions.Validation;
-using LIMS.Application.Common.Validation;
-using LIMS.Application.Instruments.Queries;
 
-namespace LIMS.Application.Instruments.Validators;
+using LIMS.Application.Instruments.DTOs;
+using LIMS.Domain.Instruments;
 
-public sealed class GetInstrumentByIdQueryValidator
-    : AbstractValidator<GetInstrumentByIdQuery>
+namespace LIMS.Application.Instruments.Mapping;
+
+public static class InstrumentMapping
 {
-    public GetInstrumentByIdQueryValidator()
+    public static InstrumentDto ToDto(this Instrument instrument)
     {
-        RuleFor(x => x.InstrumentId).NotEmpty();
+        ArgumentNullException.ThrowIfNull(instrument);
+
+        return new InstrumentDto(
+            instrument.Id,
+            instrument.LaboratoryId,
+            instrument.InstrumentCode,
+            instrument.Name,
+            instrument.Type,
+            instrument.Status,
+            instrument.Manufacturer,
+            instrument.Model,
+            instrument.SerialNumber,
+            instrument.Location,
+            instrument.Description,
+            instrument.RegisteredAt,
+            instrument.UpdatedAt,
+            instrument.RetiredAt);
     }
-}
 
-public sealed class GetInstrumentByCodeQueryValidator
-    : AbstractValidator<GetInstrumentByCodeQuery>
-{
-    public GetInstrumentByCodeQueryValidator()
+    public static InstrumentDetailsDto ToDetailsDto(
+        this Instrument instrument)
     {
-        RuleFor(x => x.LaboratoryId).NotEmpty();
+        ArgumentNullException.ThrowIfNull(instrument);
 
-        RuleFor(x => x.InstrumentCode)
-            .NotEmpty()
-            .MaximumLength(50);
+        return new InstrumentDetailsDto(
+            instrument.Id,
+            instrument.LaboratoryId,
+            instrument.InstrumentCode,
+            instrument.Name,
+            instrument.Type,
+            instrument.Status,
+            instrument.Manufacturer,
+            instrument.Model,
+            instrument.SerialNumber,
+            instrument.Location,
+            instrument.Description,
+            instrument.RegisteredAt,
+            instrument.UpdatedAt,
+            instrument.RetiredAt,
+            instrument.MaintenanceRecords
+                .Select(x => x.ToDto())
+                .ToArray());
     }
-}
 
-public sealed class GetInstrumentsByLaboratoryIdQueryValidator
-    : AbstractValidator<GetInstrumentsByLaboratoryIdQuery>
-{
-    public GetInstrumentsByLaboratoryIdQueryValidator()
+    public static InstrumentMaintenanceDto ToDto(
+        this InstrumentMaintenance maintenance)
     {
-        RuleFor(x => x.LaboratoryId).NotEmpty();
-    }
-}
+        ArgumentNullException.ThrowIfNull(maintenance);
 
-public sealed class GetInstrumentsByStatusQueryValidator
-    : AbstractValidator<GetInstrumentsByStatusQuery>
-{
-    public GetInstrumentsByStatusQueryValidator()
-    {
-        RuleFor(x => x.LaboratoryId).NotEmpty();
-
-        RuleFor(x => x.Status)
-            .Must(Enum.IsDefined);
+        return new InstrumentMaintenanceDto(
+            maintenance.Id,
+            maintenance.InstrumentId,
+            maintenance.Type,
+            maintenance.Description,
+            maintenance.ScheduledAt,
+            maintenance.ScheduledByUserId,
+            maintenance.CompletedAt,
+            maintenance.CompletedByUserId,
+            maintenance.CompletionNotes,
+            maintenance.IsCompleted);
     }
 }

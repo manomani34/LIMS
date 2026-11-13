@@ -1,12 +1,15 @@
 using LIMS.Application.Inventory.DTOs;
 using LIMS.Domain.Inventory;
 using LIMS.Domain.Inventory.Entities;
+using LIMS.Domain.Inventory.Enums;
 
 namespace LIMS.Application.Inventory.Mapping;
 
 public static class InventoryMapping
 {
-    public static InventoryItemDto ToDto(this InventoryItem item)
+    public static InventoryItemDto ToDto(
+        this InventoryItem item,
+        DateOnly currentDate)
     {
         ArgumentNullException.ThrowIfNull(item);
 
@@ -25,14 +28,23 @@ public static class InventoryMapping
             item.SafetyDataSheetReference,
             item.DefaultUnit,
             item.MinimumStockLevel,
-            item.TotalAvailableQuantity,
+            item.GetTotalAvailableQuantity(currentDate),
             item.CreatedAt,
             item.UpdatedAt);
     }
 
-    public static InventoryLotDto ToDto(this InventoryLot lot)
+    public static InventoryLotDto ToDto(
+        this InventoryLot lot,
+        DateOnly currentDate)
     {
         ArgumentNullException.ThrowIfNull(lot);
+
+        var effectiveStatus =
+            lot.Status == InventoryLotStatus.Available &&
+            lot.ExpiryDate.HasValue &&
+            lot.ExpiryDate.Value < currentDate
+                ? InventoryLotStatus.Expired
+                : lot.Status;
 
         return new InventoryLotDto(
             lot.Id,
@@ -48,11 +60,12 @@ public static class InventoryMapping
             lot.StorageLocation,
             lot.StorageConditions,
             lot.CertificateOfAnalysisNumber,
-            lot.Status,
+            effectiveStatus,
             lot.ReceivedAt);
     }
 
-    public static InventoryMovementDto ToDto(this InventoryMovement movement)
+    public static InventoryMovementDto ToDto(
+        this InventoryMovement movement)
     {
         ArgumentNullException.ThrowIfNull(movement);
 
@@ -71,13 +84,18 @@ public static class InventoryMapping
     }
 
     public static InventoryItemDetailsDto ToDetailsDto(
-        this InventoryItem item)
+        this InventoryItem item,
+        DateOnly currentDate)
     {
         ArgumentNullException.ThrowIfNull(item);
 
         return new InventoryItemDetailsDto(
-            item.ToDto(),
-            item.Lots.Select(x => x.ToDto()).ToArray(),
-            item.Movements.Select(x => x.ToDto()).ToArray());
+            item.ToDto(currentDate),
+            item.Lots
+                .Select(x => x.ToDto(currentDate))
+                .ToArray(),
+            item.Movements
+                .Select(x => x.ToDto())
+                .ToArray());
     }
 }

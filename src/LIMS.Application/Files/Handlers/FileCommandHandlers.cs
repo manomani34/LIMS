@@ -4,8 +4,9 @@ using LIMS.Application.Abstractions.Time;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Files.Commands;
 using LIMS.Application.Files.Repositories;
-using LIMS.Domain.Files;
 using LIMS.Domain.Files.Entities;
+using LIMS.Domain.Files.Enums;
+using LIMS.Domain.Files;
 
 namespace LIMS.Application.Files.Handlers;
 
@@ -311,11 +312,11 @@ public sealed class LinkFileCommandHandler
             cancellationToken);
 
         if (file is null)
-            throw new InvalidOperationException("File was not found.");
+            throw new FileDomainException("File was not found.");
 
-        if (file.Status != Domain.Files.Enums.FileStatus.Available)
-            throw new InvalidOperationException(
-                "Only available files can be linked.");
+        if (file.Status != FileStatus.Available)
+            throw new FileDomainException(
+    "Only available files can be linked.");
 
         if (await _referenceRepository.ExistsAsync(
                 command.FileId,
@@ -323,8 +324,8 @@ public sealed class LinkFileCommandHandler
                 command.ReferenceId,
                 cancellationToken))
         {
-            throw new InvalidOperationException(
-                "This file is already linked to the specified resource.");
+            throw new FileDomainException(
+    "This file is already linked to the specified resource.");
         }
 
         var reference = new FileReference(
@@ -342,18 +343,22 @@ public sealed class LinkFileCommandHandler
     }
 }
 
+
 public sealed class UnlinkFileCommandHandler
     : ICommandHandler<UnlinkFileCommand, bool>
 {
     private readonly IFileReferenceRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public UnlinkFileCommandHandler(
         IFileReferenceRepository repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<bool> HandleAsync(
@@ -367,9 +372,13 @@ public sealed class UnlinkFileCommandHandler
         if (reference is null)
             return false;
 
+        reference.Unlink(_dateTimeProvider.UtcNow);
+
         _repository.Remove(reference);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 }
+

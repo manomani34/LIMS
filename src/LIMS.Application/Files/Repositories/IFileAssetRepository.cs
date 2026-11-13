@@ -1,4 +1,4 @@
-using LIMS.Domain.Files;
+using LIMS.Domain.Files.Entities;
 
 namespace LIMS.Application.Files.Repositories;
 

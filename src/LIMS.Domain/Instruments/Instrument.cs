@@ -123,9 +123,11 @@ public sealed class Instrument : AggregateRoot<Guid>
         EnsureNotRetired();
 
         if (Status != InstrumentStatus.Available)
-            throw new InstrumentDomainException("Only available instruments can be marked as in use.");
+            throw new InstrumentDomainException(
+                "Only available instruments can be marked as in use.");
 
         ChangeStatus(InstrumentStatus.InUse, occurredOn);
+        UpdatedAt = occurredOn;
     }
 
     public void MarkAvailable(DateTimeOffset occurredOn)
@@ -133,9 +135,11 @@ public sealed class Instrument : AggregateRoot<Guid>
         EnsureNotRetired();
 
         if (Status != InstrumentStatus.InUse)
-            throw new InstrumentDomainException("Only instruments in use can be marked as available.");
+            throw new InstrumentDomainException(
+                "Only instruments in use can be marked as available.");
 
         ChangeStatus(InstrumentStatus.Available, occurredOn);
+        UpdatedAt = occurredOn;
     }
 
     public void ScheduleMaintenance(

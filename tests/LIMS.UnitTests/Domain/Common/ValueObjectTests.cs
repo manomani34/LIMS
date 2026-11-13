@@ -28,7 +28,7 @@ public sealed class ValueObjectTests
         var first = new TestValueObject("Sample", 10);
         var second = new AnotherTestValueObject("Sample", 10);
 
-        Assert.NotEqual(first, second);
+        Assert.False(first.Equals(second));
     }
 
     [Fact]

@@ -1,7 +1,8 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Files.Events;
 
 public sealed record StoredFileDeletedDomainEvent(
     Guid FileId,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

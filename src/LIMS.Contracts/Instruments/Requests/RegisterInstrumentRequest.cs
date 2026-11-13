@@ -1,3 +1,4 @@
+
 namespace LIMS.Contracts.Instruments.Requests;
 
 public sealed record RegisterInstrumentRequest(
@@ -5,7 +6,6 @@ public sealed record RegisterInstrumentRequest(
     string InstrumentCode,
     string Name,
     InstrumentTypeContract Type,
-    string RegisteredByUserId,
     string? Manufacturer,
     string? Model,
     string? SerialNumber,

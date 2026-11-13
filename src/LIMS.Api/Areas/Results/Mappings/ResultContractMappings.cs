@@ -1,3 +1,5 @@
+
+using LIMS.Application.Results.DTOs;
 using LIMS.Contracts.Results.Enums;
 using LIMS.Contracts.Results.Responses;
 using LIMS.Domain.Results.Enums;
@@ -38,8 +40,7 @@ public static class ResultContractMappings
         return (ResultValueTypeContract)(int)valueType;
     }
 
-    public static ResultEntryResponse ToResponse(
-        this LIMS.Application.Results.DTOs.ResultEntryDto entry)
+    public static ResultEntryResponse ToResponse(this ResultEntryDto entry)
     {
         return new ResultEntryResponse(
             entry.Id,
@@ -54,8 +55,33 @@ public static class ResultContractMappings
             entry.Notes);
     }
 
+    public static AnalysisResultResponse ToResponse(this AnalysisResultDto result)
+    {
+        return new AnalysisResultResponse(
+            result.Id,
+            result.LaboratoryId,
+            result.ExperimentId,
+            result.SampleId,
+            result.InstrumentId,
+            result.ResultCode,
+            result.Title,
+            result.Description,
+            result.Status.ToContract(),
+            result.CreatedByUserId,
+            result.SubmittedByUserId,
+            result.ReviewedByUserId,
+            result.ReviewComments,
+            result.RejectionReason,
+            result.ArchivedByUserId,
+            result.CreatedAt,
+            result.UpdatedAt,
+            result.SubmittedAt,
+            result.ReviewedAt,
+            result.ArchivedAt);
+    }
+
     public static AnalysisResultResponse ToResponse(
-        this LIMS.Application.Results.DTOs.AnalysisResultDto result)
+        this AnalysisResultDetailsDto result)
     {
         return new AnalysisResultResponse(
             result.Id,
@@ -81,7 +107,7 @@ public static class ResultContractMappings
     }
 
     public static AnalysisResultDetailsResponse ToDetailsResponse(
-        this LIMS.Application.Results.DTOs.AnalysisResultDetailsDto result)
+        this AnalysisResultDetailsDto result)
     {
         return new AnalysisResultDetailsResponse(
             result.ToResponse(),

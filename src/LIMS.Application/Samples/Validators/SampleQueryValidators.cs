@@ -8,13 +8,9 @@ public sealed class GetSampleByIdQueryValidator
 {
     public GetSampleByIdQueryValidator()
     {
-        RuleFor(query => query.SampleId, (query, failures) =>
-        {
-            if (query.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(query.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -23,25 +19,15 @@ public sealed class GetSampleByCodeQueryValidator
 {
     public GetSampleByCodeQueryValidator()
     {
-        RuleFor(query => query.LaboratoryId, (query, failures) =>
-        {
-            if (query.LaboratoryId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(query.LaboratoryId),
-                    "Laboratory identifier is required."));
-        });
+        RuleFor(x => x.LaboratoryId)
+            .NotEmpty()
+            .WithMessage("Laboratory identifier is required.");
 
-        RuleFor(query => query.SampleCode, (query, failures) =>
-        {
-            if (string.IsNullOrWhiteSpace(query.SampleCode))
-                failures.Add(new ValidationFailure(
-                    nameof(query.SampleCode),
-                    "Sample code is required."));
-            else if (query.SampleCode.Length > 50)
-                failures.Add(new ValidationFailure(
-                    nameof(query.SampleCode),
-                    "Sample code cannot exceed 50 characters."));
-        });
+        RuleFor(x => x.SampleCode)
+            .NotEmpty()
+            .WithMessage("Sample code is required.")
+            .MaximumLength(50)
+            .WithMessage("Sample code cannot exceed 50 characters.");
     }
 }
 
@@ -50,13 +36,9 @@ public sealed class GetSamplesByLaboratoryIdQueryValidator
 {
     public GetSamplesByLaboratoryIdQueryValidator()
     {
-        RuleFor(query => query.LaboratoryId, (query, failures) =>
-        {
-            if (query.LaboratoryId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(query.LaboratoryId),
-                    "Laboratory identifier is required."));
-        });
+        RuleFor(x => x.LaboratoryId)
+            .NotEmpty()
+            .WithMessage("Laboratory identifier is required.");
     }
 }
 
@@ -65,12 +47,10 @@ public sealed class GetSamplesByAssignedUserIdQueryValidator
 {
     public GetSamplesByAssignedUserIdQueryValidator()
     {
-        RuleFor(query => query.UserId, (query, failures) =>
-        {
-            if (string.IsNullOrWhiteSpace(query.UserId))
-                failures.Add(new ValidationFailure(
-                    nameof(query.UserId),
-                    "User identifier is required."));
-        });
+        RuleFor(x => x.UserId)
+            .NotEmpty()
+            .WithMessage("User identifier is required.")
+            .MaximumLength(150)
+            .WithMessage("User identifier cannot exceed 150 characters.");
     }
 }

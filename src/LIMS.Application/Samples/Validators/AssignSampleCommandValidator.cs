@@ -8,24 +8,14 @@ public sealed class AssignSampleCommandValidator
 {
     public AssignSampleCommandValidator()
     {
-        RuleFor(
-            command => command.SampleId,
-            (command, failures) =>
-            {
-                if (command.SampleId == Guid.Empty)
-                    failures.Add(new ValidationFailure(
-                        nameof(command.SampleId),
-                        "Sample identifier is required."));
-            });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
 
-        RuleFor(
-            command => command.UserId,
-            (command, failures) =>
-            {
-                if (string.IsNullOrWhiteSpace(command.UserId))
-                    failures.Add(new ValidationFailure(
-                        nameof(command.UserId),
-                        "User identifier is required."));
-            });
+        RuleFor(x => x.UserId)
+            .NotEmpty()
+            .WithMessage("User identifier is required.")
+            .MaximumLength(150)
+            .WithMessage("User identifier cannot exceed 150 characters.");
     }
 }

@@ -1,5 +1,4 @@
 using LIMS.Application.Abstractions.Validation;
-using LIMS.Application.Common.Validation;
 using LIMS.Application.Instruments.Queries;
 
 namespace LIMS.Application.Instruments.Validators;
@@ -46,3 +45,4 @@ public sealed class GetInstrumentsByStatusQueryValidator
             .Must(Enum.IsDefined);
     }
 }
+

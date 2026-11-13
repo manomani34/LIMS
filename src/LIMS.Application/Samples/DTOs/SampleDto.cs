@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Samples.Enums;
 
 namespace LIMS.Application.Samples.DTOs;
@@ -8,12 +9,13 @@ public sealed record SampleDto(
     string SampleCode,
     string Name,
     string? Description,
+    string? RejectionReason,
     SampleType Type,
     SampleStatus Status,
     SamplePriority Priority,
     string? Source,
     string? AssignedToUserId,
-    string RegisteredByUserId,
+    string? RegisteredByUserId,
     DateTimeOffset RegisteredAt,
     DateTimeOffset? ReceivedAt,
     DateTimeOffset? UpdatedAt,

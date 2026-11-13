@@ -13,12 +13,12 @@ public sealed class RegisterFileCommandValidator
             .MaximumLength(255);
 
         RuleFor(x => x.StorageKey)
-            .NotEmpty()
-            .MaximumLength(500);
+    .NotEmpty()
+    .MaximumLength(1000);
 
         RuleFor(x => x.ContentType)
             .NotEmpty()
-            .MaximumLength(150);
+            .MaximumLength(200);
 
         RuleFor(x => x.FileExtension)
             .NotEmpty()
@@ -68,8 +68,8 @@ public sealed class QuarantineFileCommandValidator
             .WithMessage("File ID is required.");
 
         RuleFor(x => x.Reason)
-            .NotEmpty()
-            .MaximumLength(2000);
+    .NotEmpty()
+    .MaximumLength(1000);
     }
 }
 
@@ -83,8 +83,8 @@ public sealed class RejectFileCommandValidator
             .WithMessage("File ID is required.");
 
         RuleFor(x => x.Reason)
-            .NotEmpty()
-            .MaximumLength(2000);
+    .NotEmpty()
+    .MaximumLength(1000);
     }
 }
 

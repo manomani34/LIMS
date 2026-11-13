@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Validation;
 using LIMS.Application.Experiments.Commands;
 
@@ -9,7 +10,8 @@ public sealed class UnassignExperimentCommandValidator
     public UnassignExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
     }
 }
 
@@ -19,7 +21,8 @@ public sealed class StartExperimentCommandValidator
     public StartExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
     }
 }
 
@@ -29,7 +32,8 @@ public sealed class CompleteExperimentCommandValidator
     public CompleteExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
     }
 }
 
@@ -39,6 +43,7 @@ public sealed class ArchiveExperimentCommandValidator
     public ArchiveExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
     }
 }

@@ -8,13 +8,9 @@ public sealed class ReceiveSampleCommandValidator
 {
     public ReceiveSampleCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -23,13 +19,9 @@ public sealed class StartSamplePreparationCommandValidator
 {
     public StartSamplePreparationCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -38,13 +30,9 @@ public sealed class MarkSampleReadyForAnalysisCommandValidator
 {
     public MarkSampleReadyForAnalysisCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -53,13 +41,9 @@ public sealed class StartSampleAnalysisCommandValidator
 {
     public StartSampleAnalysisCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -68,13 +52,9 @@ public sealed class CompleteSampleAnalysisCommandValidator
 {
     public CompleteSampleAnalysisCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -83,13 +63,9 @@ public sealed class UnassignSampleCommandValidator
 {
     public UnassignSampleCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }
 
@@ -98,12 +74,8 @@ public sealed class ArchiveSampleCommandValidator
 {
     public ArchiveSampleCommandValidator()
     {
-        RuleFor(command => command.SampleId, (command, failures) =>
-        {
-            if (command.SampleId == Guid.Empty)
-                failures.Add(new ValidationFailure(
-                    nameof(command.SampleId),
-                    "Sample identifier is required."));
-        });
+        RuleFor(x => x.SampleId)
+            .NotEmpty()
+            .WithMessage("Sample identifier is required.");
     }
 }

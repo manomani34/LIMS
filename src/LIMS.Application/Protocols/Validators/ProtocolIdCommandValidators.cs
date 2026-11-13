@@ -9,10 +9,12 @@ public sealed class RemoveProtocolStepCommandValidator
     public RemoveProtocolStepCommandValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
 
         RuleFor(x => x.StepId)
-            .Must(x => x != Guid.Empty, "StepId is required.");
+            .NotEmpty()
+            .WithMessage("StepId is required.");
     }
 }
 
@@ -22,7 +24,8 @@ public sealed class ActivateProtocolCommandValidator
     public ActivateProtocolCommandValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
     }
 }
 
@@ -32,7 +35,8 @@ public sealed class DeprecateProtocolCommandValidator
     public DeprecateProtocolCommandValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
     }
 }
 
@@ -42,6 +46,7 @@ public sealed class ArchiveProtocolCommandValidator
     public ArchiveProtocolCommandValidator()
     {
         RuleFor(x => x.ProtocolId)
-            .Must(x => x != Guid.Empty, "ProtocolId is required.");
+            .NotEmpty()
+            .WithMessage("ProtocolId is required.");
     }
 }

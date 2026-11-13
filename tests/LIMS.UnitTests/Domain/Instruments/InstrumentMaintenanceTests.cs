@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Instruments;
 using LIMS.Domain.Instruments.Enums;
 
@@ -15,12 +16,12 @@ public sealed class InstrumentMaintenanceTests
             "NMR-001",
             "NMR Spectrometer",
             InstrumentType.NmrSpectrometer,
-            DateTimeOffset.UtcNow,
             "Bruker",
             "AVANCE III",
             "SN-12345",
             "Chemistry Laboratory",
-            null);
+            "300 MHz spectrometer",
+            DateTimeOffset.UtcNow);
     }
 
     [Fact]

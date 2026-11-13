@@ -1,4 +1,4 @@
-using LIMS.Domain.Common;
+﻿using LIMS.Domain.Common;
 
 namespace LIMS.Domain.Workflows.Events;
 
@@ -8,4 +8,5 @@ public sealed record WorkflowTaskRejectedDomainEvent(
     string RejectedByUserId,
     string Reason,
     DateTime RejectedAt,
-    DateTime OccurredOn) : IDomainEvent;
+    DateTimeOffset OccurredOn) : IDomainEvent;
+

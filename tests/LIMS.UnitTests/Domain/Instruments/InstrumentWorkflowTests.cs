@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Instruments;
 using LIMS.Domain.Instruments.Enums;
 
@@ -12,15 +13,15 @@ public sealed class InstrumentWorkflowTests
     {
         return Instrument.Register(
             LaboratoryId,
-            "HPLC-001",
-            "HPLC System",
-            InstrumentType.Chromatograph,
-            DateTimeOffset.UtcNow,
-            "Agilent",
-            "1260 Infinity",
-            "HPLC-SN-001",
-            "Analytical Laboratory",
-            null);
+            "NMR-001",
+            "NMR Spectrometer",
+            InstrumentType.NmrSpectrometer,
+            "Bruker",
+            "AVANCE III",
+            "SN-12345",
+            "Chemistry Laboratory",
+            "300 MHz spectrometer",
+            DateTimeOffset.UtcNow);
     }
 
     [Fact]

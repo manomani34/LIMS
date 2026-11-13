@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Common;
 using LIMS.Domain.Samples.Enums;
 using LIMS.Domain.Samples.Events;
@@ -34,6 +35,8 @@ public sealed class Sample : AggregateRoot<Guid>
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public DateTimeOffset? ArchivedAt { get; private set; }
+
+    public string? RejectionReason { get; private set; }
 
     private Sample()
     {
@@ -166,8 +169,13 @@ public sealed class Sample : AggregateRoot<Guid>
             completedAt);
     }
 
-    public void Reject(DateTimeOffset rejectedAt)
+    public void Reject(string reason, DateTimeOffset rejectedAt)
     {
+        var normalizedReason = NormalizeRequired(
+            reason,
+            nameof(reason),
+            1000);
+
         EnsureNotArchived();
 
         if (Status == SampleStatus.AnalysisCompleted)
@@ -181,6 +189,7 @@ public sealed class Sample : AggregateRoot<Guid>
 
         var previousStatus = Status;
 
+        RejectionReason = normalizedReason;
         Status = SampleStatus.Rejected;
         UpdatedAt = rejectedAt;
 

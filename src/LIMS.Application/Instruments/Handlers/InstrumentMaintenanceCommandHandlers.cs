@@ -1,7 +1,7 @@
-using LIMS.Application.Abstractions.Messaging;
+﻿using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Instruments.Abstractions;
+using LIMS.Application.Instruments.Repositories;
 using LIMS.Domain.Instruments;
 
 namespace LIMS.Application.Instruments.Handlers;
@@ -81,3 +81,4 @@ public sealed class CompleteInstrumentMaintenanceCommandHandler
         return true;
     }
 }
+

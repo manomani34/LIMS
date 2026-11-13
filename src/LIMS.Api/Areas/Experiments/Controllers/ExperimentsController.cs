@@ -29,8 +29,7 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] CreateExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await _dispatcher.SendAsync(
-            new CreateExperimentCommand(
+        var id = await _dispatcher.SendAsync<CreateExperimentCommand, Guid>(new CreateExperimentCommand(
                 request.LaboratoryId,
                 request.SampleId,
                 request.ExperimentCode,
@@ -138,8 +137,7 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] UpdateExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new UpdateExperimentInformationCommand(
+        var updated = await _dispatcher.SendAsync<UpdateExperimentInformationCommand, bool>(new UpdateExperimentInformationCommand(
                 experimentId,
                 request.Title,
                 request.Description),
@@ -157,8 +155,7 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] AssignExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new AssignExperimentCommand(experimentId, request.UserId),
+        var updated = await _dispatcher.SendAsync<AssignExperimentCommand, bool>(new AssignExperimentCommand(experimentId, request.UserId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
@@ -171,8 +168,7 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new UnassignExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<UnassignExperimentCommand, bool>(new UnassignExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
@@ -185,8 +181,7 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new StartExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<StartExperimentCommand, bool>(new StartExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
@@ -199,8 +194,7 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new CompleteExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<CompleteExperimentCommand, bool>(new CompleteExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
@@ -215,8 +209,7 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] CancelExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new CancelExperimentCommand(experimentId, request.Reason),
+        var updated = await _dispatcher.SendAsync<CancelExperimentCommand, bool>(new CancelExperimentCommand(experimentId, request.Reason),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
@@ -229,8 +222,7 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync(
-            new ArchiveExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<ArchiveExperimentCommand, bool>(new ArchiveExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();

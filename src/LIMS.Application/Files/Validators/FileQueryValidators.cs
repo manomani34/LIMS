@@ -1,5 +1,6 @@
 using LIMS.Application.Files.Queries;
 using LIMS.Application.Abstractions.Validation;
+using LIMS.Application.Files.DTOs;
 
 namespace LIMS.Application.Files.Validators;
 
@@ -33,6 +34,17 @@ public sealed class GetFileReferencesQueryValidator
     : AbstractValidator<GetFileReferencesQuery>
 {
     public GetFileReferencesQueryValidator()
+    {
+        RuleFor(x => x.FileId)
+            .Must(x => x != Guid.Empty)
+            .WithMessage("File ID is required.");
+    }
+}
+
+public sealed class DownloadFileQueryValidator
+    : AbstractValidator<DownloadFileQuery>
+{
+    public DownloadFileQueryValidator()
     {
         RuleFor(x => x.FileId)
             .Must(x => x != Guid.Empty)

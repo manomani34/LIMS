@@ -9,10 +9,13 @@ public sealed class CancelExperimentCommandValidator
     public CancelExperimentCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
 
         RuleFor(x => x.Reason)
-            .NotEmpty("Cancellation reason is required.")
-            .MaximumLength(1000, "Cancellation reason cannot exceed 1000 characters.");
+            .NotEmpty()
+            .WithMessage("Cancellation reason is required.")
+            .MaximumLength(1000)
+            .WithMessage("Cancellation reason cannot exceed 1000 characters.");
     }
 }

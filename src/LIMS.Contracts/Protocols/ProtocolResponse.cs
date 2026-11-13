@@ -6,7 +6,7 @@ public sealed record ProtocolResponse(
     string ProtocolCode,
     string Name,
     string? Description,
-    string Version,
+    string? Version,
     ProtocolStatusContract Status,
     string CreatedByUserId,
     DateTimeOffset CreatedAt,

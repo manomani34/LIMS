@@ -1,7 +1,6 @@
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Abstractions.Persistence;
 using LIMS.Application.Abstractions.Time;
-using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Requests.Commands;
 using LIMS.Application.Requests.Repositories;
 using LIMS.Domain.Requests;
@@ -47,7 +46,7 @@ public sealed class CreateSampleRequestCommandHandler
             command.SampleSource,
             command.RequestedByUserId,
             command.Priority,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow.UtcDateTime);
 
         await _repository.AddAsync(request, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

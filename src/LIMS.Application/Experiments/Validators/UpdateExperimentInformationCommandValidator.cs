@@ -9,13 +9,17 @@ public sealed class UpdateExperimentInformationCommandValidator
     public UpdateExperimentInformationCommandValidator()
     {
         RuleFor(x => x.ExperimentId)
-            .Must(x => x != Guid.Empty, "ExperimentId is required.");
+            .NotEmpty()
+            .WithMessage("ExperimentId is required.");
 
         RuleFor(x => x.Title)
-            .NotEmpty("Title is required.")
-            .MaximumLength(200, "Title cannot exceed 200 characters.");
+            .NotEmpty()
+            .WithMessage("Title is required.")
+            .MaximumLength(200)
+            .WithMessage("Title cannot exceed 200 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000, "Description cannot exceed 2000 characters.");
+            .MaximumLength(2000)
+            .WithMessage("Description cannot exceed 2000 characters.");
     }
 }

@@ -1,3 +1,4 @@
+
 using LIMS.Application.Requests.DTOs;
 using LIMS.Contracts.Requests.Enums;
 using LIMS.Contracts.Requests.Responses;
@@ -40,6 +41,15 @@ public static class SampleRequestContractMappings
             request.RejectedAt,
             request.CancelledAt,
             request.FulfilledAt);
+    }
+
+    public static SampleTypeContract ToContract(
+        this SampleType sampleType)
+    {
+        if (!Enum.IsDefined(sampleType))
+            throw new ArgumentOutOfRangeException(nameof(sampleType));
+
+        return (SampleTypeContract)(int)sampleType;
     }
 
     public static SampleRequestStatusContract ToContract(

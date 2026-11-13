@@ -1,3 +1,4 @@
+
 using LIMS.Domain.Samples;
 using LIMS.Domain.Samples.Enums;
 using LIMS.Domain.Samples.Events;
@@ -176,13 +177,56 @@ public sealed class SampleTests
     }
 
     [Fact]
-    public void Reject_ShouldChangeStatus()
+    public void Reject_ShouldChangeStatusAndStoreReason()
     {
         var sample = CreateSample();
 
-        sample.Reject(Now.AddMinutes(10));
+        sample.Reject("Sample rejected for testing.", Now.AddMinutes(10));
 
         Assert.Equal(SampleStatus.Rejected, sample.Status);
+        Assert.Equal("Sample rejected for testing.", sample.RejectionReason);
+        Assert.Equal(Now.AddMinutes(10), sample.UpdatedAt);
+    }
+
+    [Fact]
+    public void Reject_ShouldNormalizeReason()
+    {
+        var sample = CreateSample();
+
+        sample.Reject("  Contaminated sample.  ", Now);
+
+        Assert.Equal("Contaminated sample.", sample.RejectionReason);
+    }
+
+    [Fact]
+    public void Reject_ShouldRejectEmptyReason()
+    {
+        var sample = CreateSample();
+
+        Assert.Throws<SampleDomainException>(() =>
+            sample.Reject(" ", Now));
+    }
+
+    [Fact]
+    public void Reject_ShouldRejectReasonExceedingMaximumLength()
+    {
+        var sample = CreateSample();
+        var reason = new string('A', 1001);
+
+        Assert.Throws<SampleDomainException>(() =>
+            sample.Reject(reason, Now));
+    }
+
+    [Fact]
+    public void Reject_ShouldPreserveOriginalReasonWhenRejectedAgain()
+    {
+        var sample = CreateSample();
+
+        sample.Reject("Original reason.", Now);
+        sample.Reject("Another reason.", Now.AddMinutes(10));
+
+        Assert.Equal(SampleStatus.Rejected, sample.Status);
+        Assert.Equal("Original reason.", sample.RejectionReason);
     }
 
     [Fact]
@@ -193,7 +237,7 @@ public sealed class SampleTests
         CompleteWorkflow(sample);
 
         Assert.Throws<SampleDomainException>(() =>
-            sample.Reject(Now.AddMinutes(10)));
+            sample.Reject("Sample rejected for testing.", Now.AddMinutes(10)));
     }
 
     [Fact]
@@ -273,7 +317,7 @@ public sealed class SampleTests
     {
         var sample = CreateSample();
 
-        sample.Reject(Now);
+        sample.Reject("Sample rejected for testing.", Now);
         sample.Archive(Now.AddMinutes(10));
 
         Assert.Equal(SampleStatus.Archived, sample.Status);
