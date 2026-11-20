@@ -1,10 +1,7 @@
-
 using LIMS.Api.Configuration;
 using LIMS.Api.Middleware;
-using LIMS.Api.Security.Development;
 using LIMS.Application;
 using LIMS.Infrastructure;
-using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,21 +18,11 @@ builder.Services.AddLimsApiVersioning();
 builder.Services.AddLimsRequestSizeLimits();
 builder.Services.AddLimsRateLimiting();
 builder.Services.AddLimsCors(builder.Configuration);
-builder.Services.AddLimsAuthorization();
 
-// TEMPORARY: Development-only authentication.
-// Remove after Development API tests.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services
-        .AddAuthentication(
-            DevelopmentAuthenticationHandler.SchemeName)
-        .AddScheme<
-            AuthenticationSchemeOptions,
-            DevelopmentAuthenticationHandler>(
-            DevelopmentAuthenticationHandler.SchemeName,
-            _ => { });
-}
+builder.Services.AddLimsAuthentication(
+    builder.Configuration);
+
+builder.Services.AddLimsAuthorization();
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -79,14 +66,16 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = "swagger";
         options.DocumentTitle = "LIMS API Documentation";
     });
-
-    // TEMPORARY: Remove after Development API tests.
-    app.UseAuthentication();
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors(CorsConfiguration.PolicyName);
+
+app.UseAuthentication();
+
 app.UseRateLimiter();
+
 app.UseAuthorization();
 
 app.MapControllers()

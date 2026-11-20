@@ -1,4 +1,5 @@
 
+using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Results.Commands;
 using LIMS.Application.Results.Queries;
@@ -7,6 +8,7 @@ using LIMS.Contracts.Results.Mappings;
 using LIMS.Contracts.Results.Requests;
 using LIMS.Contracts.Results.Responses;
 using LIMS.Domain.Results.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Results.Controllers;
@@ -18,13 +20,18 @@ namespace LIMS.Api.Areas.Results.Controllers;
 public sealed class ResultsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
+    private readonly ICurrentUser _currentUser;
 
-    public ResultsController(IDispatcher dispatcher)
+    public ResultsController(
+        IDispatcher dispatcher,
+        ICurrentUser currentUser)
     {
         _dispatcher = dispatcher;
+        _currentUser = currentUser;
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.Results.Create")]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -41,7 +48,7 @@ public sealed class ResultsController : ControllerBase
                 request.ResultCode,
                 request.Title,
                 request.Description,
-                request.CreatedByUserId),
+                RequireCurrentUserId()),
             cancellationToken);
 
         return CreatedAtAction(
@@ -51,6 +58,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("{resultId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(AnalysisResultDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
@@ -69,6 +77,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{resultCode}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(AnalysisResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
@@ -88,6 +97,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AnalysisResultResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
@@ -103,6 +113,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("by-experiment/{experimentId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AnalysisResultResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByExperiment(
         Guid experimentId,
@@ -118,6 +129,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("by-sample/{sampleId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AnalysisResultResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBySample(
         Guid sampleId,
@@ -133,6 +145,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpGet("by-status/{laboratoryId:guid}/{status}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AnalysisResultResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByStatus(
@@ -158,6 +171,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPut("{resultId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -178,6 +192,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost("{resultId:guid}/entries")]
+    [Authorize(Policy = "Permission:Laboratory.Results.ManageEntries")]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -206,6 +221,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPut("{resultId:guid}/entries/{entryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.ManageEntries")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -233,6 +249,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpDelete("{resultId:guid}/entries/{entryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Results.ManageEntries")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveEntry(
@@ -248,6 +265,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost("{resultId:guid}/submit")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Submit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -259,13 +277,14 @@ public sealed class ResultsController : ControllerBase
         var submitted = await _dispatcher.SendAsync<SubmitAnalysisResultCommand, bool>(
             new SubmitAnalysisResultCommand(
                 resultId,
-                request.SubmittedByUserId),
+                RequireCurrentUserId()),
             cancellationToken);
 
         return submitted ? NoContent() : NotFound();
     }
 
     [HttpPost("{resultId:guid}/start-review")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -277,13 +296,14 @@ public sealed class ResultsController : ControllerBase
         var started = await _dispatcher.SendAsync<StartAnalysisResultReviewCommand, bool>(
             new StartAnalysisResultReviewCommand(
                 resultId,
-                request.ReviewerUserId),
+                RequireCurrentUserId()),
             cancellationToken);
 
         return started ? NoContent() : NotFound();
     }
 
     [HttpPost("{resultId:guid}/approve")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Approve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -295,7 +315,7 @@ public sealed class ResultsController : ControllerBase
         var approved = await _dispatcher.SendAsync<ApproveAnalysisResultCommand, bool>(
             new ApproveAnalysisResultCommand(
                 resultId,
-                request.ReviewerUserId,
+                RequireCurrentUserId(),
                 request.Comments),
             cancellationToken);
 
@@ -303,6 +323,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost("{resultId:guid}/reject")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Reject")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -314,7 +335,7 @@ public sealed class ResultsController : ControllerBase
         var rejected = await _dispatcher.SendAsync<RejectAnalysisResultCommand, bool>(
             new RejectAnalysisResultCommand(
                 resultId,
-                request.ReviewerUserId,
+                RequireCurrentUserId(),
                 request.Reason),
             cancellationToken);
 
@@ -322,6 +343,7 @@ public sealed class ResultsController : ControllerBase
     }
 
     [HttpPost("{resultId:guid}/return-to-draft")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -333,13 +355,14 @@ public sealed class ResultsController : ControllerBase
         var returned = await _dispatcher.SendAsync<ReturnAnalysisResultToDraftCommand, bool>(
             new ReturnAnalysisResultToDraftCommand(
                 resultId,
-                request.RequestedByUserId),
+                RequireCurrentUserId()),
             cancellationToken);
 
         return returned ? NoContent() : NotFound();
     }
 
     [HttpPost("{resultId:guid}/archive")]
+    [Authorize(Policy = "Permission:Laboratory.Results.Archive")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -351,9 +374,20 @@ public sealed class ResultsController : ControllerBase
         var archived = await _dispatcher.SendAsync<ArchiveAnalysisResultCommand, bool>(
             new ArchiveAnalysisResultCommand(
                 resultId,
-                request.ArchivedByUserId),
+                RequireCurrentUserId()),
             cancellationToken);
 
         return archived ? NoContent() : NotFound();
+    }
+
+    private string RequireCurrentUserId()
+    {
+        if (string.IsNullOrWhiteSpace(_currentUser.UserId))
+        {
+            throw new InvalidOperationException(
+                "An authenticated user is required for this operation.");
+        }
+
+        return _currentUser.UserId;
     }
 }

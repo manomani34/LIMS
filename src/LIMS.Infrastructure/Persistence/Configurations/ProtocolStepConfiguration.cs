@@ -1,4 +1,3 @@
-
 using LIMS.Domain.Protocols;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -29,16 +28,16 @@ public sealed class ProtocolStepConfiguration
             .IsRequired();
 
         builder.Property(x => x.TargetValue)
-            .HasMaxLength(200);
+            .HasPrecision(18, 6);
 
         builder.Property(x => x.TargetUnit)
             .HasMaxLength(100);
 
         builder.Property(x => x.MinimumValue)
-            .HasMaxLength(200);
+            .HasPrecision(18, 6);
 
         builder.Property(x => x.MaximumValue)
-            .HasMaxLength(200);
+            .HasPrecision(18, 6);
 
         builder.Property(x => x.Notes)
             .HasMaxLength(2000);

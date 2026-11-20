@@ -1,3 +1,4 @@
+
 using System.Security.Cryptography;
 using LIMS.Api.Areas.Files.Mappings;
 using LIMS.Api.Areas.Files.Models;
@@ -10,6 +11,7 @@ using LIMS.Contracts.Common;
 using LIMS.Contracts.Files;
 using LIMS.Contracts.Files.Responses;
 using LIMS.Domain.Files.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Files.Controllers;
@@ -32,6 +34,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.Files.Upload")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)]
     [ProducesResponseType(
@@ -205,6 +208,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpGet("{fileId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Files.View")]
     [ProducesResponseType(
         typeof(FileResponse),
         StatusCodes.Status200OK)]
@@ -225,10 +229,11 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpGet("{fileId:guid}/download")]
+    [Authorize(Policy = "Permission:Laboratory.Files.View")]
     [Produces("application/octet-stream")]
     [ProducesResponseType(
-    typeof(FileStreamResult),
-    StatusCodes.Status200OK)]
+        typeof(FileStreamResult),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Download(
         Guid fileId,
@@ -253,6 +258,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpGet("by-reference/{referenceType}/{referenceId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Files.View")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<FileResponse>),
         StatusCodes.Status200OK)]
@@ -275,6 +281,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpGet("{fileId:guid}/references")]
+    [Authorize(Policy = "Permission:Laboratory.Files.View")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<FileReferenceResponse>),
         StatusCodes.Status200OK)]
@@ -294,6 +301,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPost("{fileId:guid}/references")]
+    [Authorize(Policy = "Permission:Laboratory.Files.Link")]
     [ProducesResponseType(
         typeof(ResourceIdResponse),
         StatusCodes.Status201Created)]
@@ -326,6 +334,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpDelete("references/{referenceId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Files.Unlink")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Unlink(
@@ -342,6 +351,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPatch("{fileId:guid}/description")]
+    [Authorize(Policy = "Permission:Laboratory.Files.EditDescription")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -364,6 +374,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPost("{fileId:guid}/quarantine")]
+    [Authorize(Policy = "Permission:Laboratory.Files.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Quarantine(
@@ -381,6 +392,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPost("{fileId:guid}/release")]
+    [Authorize(Policy = "Permission:Laboratory.Files.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReleaseFromQuarantine(
@@ -397,6 +409,7 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpPost("{fileId:guid}/reject")]
+    [Authorize(Policy = "Permission:Laboratory.Files.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Reject(
@@ -414,13 +427,14 @@ public sealed class FilesController : ControllerBase
     }
 
     [HttpDelete("{fileId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Files.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
-    Guid fileId,
-    [FromQuery] string deletedByUserId,
-    CancellationToken cancellationToken)
+        Guid fileId,
+        [FromQuery] string deletedByUserId,
+        CancellationToken cancellationToken)
     {
         var deleted = await _dispatcher.SendAsync<
             DeleteFileCommand,
@@ -434,8 +448,8 @@ public sealed class FilesController : ControllerBase
     }
 
     private IActionResult InvalidUploadRequest(
-    string field,
-    string message)
+        string field,
+        string message)
     {
         return BadRequest(
             new ValidationErrorResponse(

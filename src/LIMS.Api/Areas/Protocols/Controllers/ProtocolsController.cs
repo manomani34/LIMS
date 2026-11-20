@@ -1,9 +1,11 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Protocols.Commands;
 using LIMS.Application.Protocols.DTOs;
 using LIMS.Application.Protocols.Queries;
 using LIMS.Contracts.Common;
 using LIMS.Contracts.Protocols;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Protocols.Controllers;
@@ -21,6 +23,7 @@ public sealed class ProtocolsController : ControllerBase
         _dispatcher = dispatcher;
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.Create")]
     [HttpPost]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -29,7 +32,8 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] CreateProtocolRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await _dispatcher.SendAsync<CreateProtocolCommand, Guid>(new CreateProtocolCommand(
+        var id = await _dispatcher.SendAsync<CreateProtocolCommand, Guid>(
+            new CreateProtocolCommand(
                 request.LaboratoryId,
                 request.ProtocolCode,
                 request.Name,
@@ -44,6 +48,7 @@ public sealed class ProtocolsController : ControllerBase
             id);
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.View")]
     [HttpGet("{protocolId:guid}")]
     [ProducesResponseType(typeof(ProtocolDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -51,7 +56,10 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetProtocolByIdQuery, LIMS.Application.Protocols.DTOs.ProtocolDetailsDto?>(new GetProtocolByIdQuery(protocolId),
+        var result = await _dispatcher.QueryAsync<
+            GetProtocolByIdQuery,
+            ProtocolDetailsDto?>(
+            new GetProtocolByIdQuery(protocolId),
             cancellationToken);
 
         return result is null
@@ -59,6 +67,7 @@ public sealed class ProtocolsController : ControllerBase
             : Ok(Map(result));
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.View")]
     [HttpGet("by-code/{laboratoryId:guid}/{protocolCode}")]
     [ProducesResponseType(typeof(ProtocolResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -67,7 +76,10 @@ public sealed class ProtocolsController : ControllerBase
         string protocolCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetProtocolByCodeQuery, LIMS.Application.Protocols.DTOs.ProtocolDto?>(new GetProtocolByCodeQuery(laboratoryId, protocolCode),
+        var result = await _dispatcher.QueryAsync<
+            GetProtocolByCodeQuery,
+            ProtocolDto?>(
+            new GetProtocolByCodeQuery(laboratoryId, protocolCode),
             cancellationToken);
 
         return result is null
@@ -75,18 +87,25 @@ public sealed class ProtocolsController : ControllerBase
             : Ok(Map(result));
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.View")]
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ProtocolResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<ProtocolResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync<GetProtocolsByLaboratoryIdQuery, IReadOnlyCollection<LIMS.Application.Protocols.DTOs.ProtocolDto>>(new GetProtocolsByLaboratoryIdQuery(laboratoryId),
+        var results = await _dispatcher.QueryAsync<
+            GetProtocolsByLaboratoryIdQuery,
+            IReadOnlyCollection<ProtocolDto>>(
+            new GetProtocolsByLaboratoryIdQuery(laboratoryId),
             cancellationToken);
 
         return Ok(results.Select(Map).ToArray());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.Edit")]
     [HttpPut("{protocolId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -97,7 +116,10 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] UpdateProtocolRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<UpdateProtocolInformationCommand, bool>(new UpdateProtocolInformationCommand(
+        var updated = await _dispatcher.SendAsync<
+            UpdateProtocolInformationCommand,
+            bool>(
+            new UpdateProtocolInformationCommand(
                 protocolId,
                 request.Name,
                 request.Description,
@@ -107,6 +129,7 @@ public sealed class ProtocolsController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.ManageSteps")]
     [HttpPost("{protocolId:guid}/steps")]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -117,7 +140,10 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] AddProtocolStepRequest request,
         CancellationToken cancellationToken)
     {
-        var stepId = await _dispatcher.SendAsync<AddProtocolStepCommand, Guid>(new AddProtocolStepCommand(
+        var stepId = await _dispatcher.SendAsync<
+            AddProtocolStepCommand,
+            Guid>(
+            new AddProtocolStepCommand(
                 protocolId,
                 request.Sequence,
                 request.Title,
@@ -137,6 +163,7 @@ public sealed class ProtocolsController : ControllerBase
             stepId);
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.ManageSteps")]
     [HttpPut("{protocolId:guid}/steps/{stepId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -148,7 +175,10 @@ public sealed class ProtocolsController : ControllerBase
         [FromBody] UpdateProtocolStepRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<UpdateProtocolStepCommand, bool>(new UpdateProtocolStepCommand(
+        var updated = await _dispatcher.SendAsync<
+            UpdateProtocolStepCommand,
+            bool>(
+            new UpdateProtocolStepCommand(
                 protocolId,
                 stepId,
                 request.Sequence,
@@ -166,6 +196,7 @@ public sealed class ProtocolsController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.ManageSteps")]
     [HttpDelete("{protocolId:guid}/steps/{stepId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -175,12 +206,16 @@ public sealed class ProtocolsController : ControllerBase
         Guid stepId,
         CancellationToken cancellationToken)
     {
-        var removed = await _dispatcher.SendAsync<RemoveProtocolStepCommand, bool>(new RemoveProtocolStepCommand(protocolId, stepId),
+        var removed = await _dispatcher.SendAsync<
+            RemoveProtocolStepCommand,
+            bool>(
+            new RemoveProtocolStepCommand(protocolId, stepId),
             cancellationToken);
 
         return removed ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.Activate")]
     [HttpPost("{protocolId:guid}/activate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -189,12 +224,16 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var activated = await _dispatcher.SendAsync<ActivateProtocolCommand, bool>(new ActivateProtocolCommand(protocolId),
+        var activated = await _dispatcher.SendAsync<
+            ActivateProtocolCommand,
+            bool>(
+            new ActivateProtocolCommand(protocolId),
             cancellationToken);
 
         return activated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.Deprecate")]
     [HttpPost("{protocolId:guid}/deprecate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -203,12 +242,16 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var deprecated = await _dispatcher.SendAsync<DeprecateProtocolCommand, bool>(new DeprecateProtocolCommand(protocolId),
+        var deprecated = await _dispatcher.SendAsync<
+            DeprecateProtocolCommand,
+            bool>(
+            new DeprecateProtocolCommand(protocolId),
             cancellationToken);
 
         return deprecated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Protocols.Archive")]
     [HttpPost("{protocolId:guid}/archive")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -217,7 +260,10 @@ public sealed class ProtocolsController : ControllerBase
         Guid protocolId,
         CancellationToken cancellationToken)
     {
-        var archived = await _dispatcher.SendAsync<ArchiveProtocolCommand, bool>(new ArchiveProtocolCommand(protocolId),
+        var archived = await _dispatcher.SendAsync<
+            ArchiveProtocolCommand,
+            bool>(
+            new ArchiveProtocolCommand(protocolId),
             cancellationToken);
 
         return archived ? NoContent() : NotFound();

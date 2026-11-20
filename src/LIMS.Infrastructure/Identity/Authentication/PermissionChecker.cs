@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Security;
 
@@ -17,12 +18,14 @@ public sealed class PermissionChecker : IPermissionChecker
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
+
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = _currentUser.IsAuthenticated &&
-                     _currentUser.Roles.Contains(
-                         permission,
-                         StringComparer.OrdinalIgnoreCase);
+        var result =
+            _currentUser.IsAuthenticated &&
+            _currentUser.Permissions.Contains(
+                permission,
+                StringComparer.OrdinalIgnoreCase);
 
         return Task.FromResult(result);
     }

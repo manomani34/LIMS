@@ -1,5 +1,6 @@
 
 using LIMS.Api.Areas.Samples.Mappings;
+using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Samples.Commands;
 using LIMS.Application.Samples.DTOs;
@@ -7,6 +8,7 @@ using LIMS.Application.Samples.Queries;
 using LIMS.Contracts.Common;
 using LIMS.Contracts.Samples;
 using LIMS.Contracts.Samples.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Samples.Controllers;
@@ -18,13 +20,18 @@ namespace LIMS.Api.Areas.Samples.Controllers;
 public sealed class SamplesController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
+    private readonly ICurrentUser _currentUser;
 
-    public SamplesController(IDispatcher dispatcher)
+    public SamplesController(
+        IDispatcher dispatcher,
+        ICurrentUser currentUser)
     {
         _dispatcher = dispatcher;
+        _currentUser = currentUser;
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Create")]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
@@ -40,7 +47,7 @@ public sealed class SamplesController : ControllerBase
             request.Type.ToDomain(),
             request.Priority.ToDomain(),
             request.Source,
-            request.RegisteredByUserId);
+            RequireCurrentUserId());
 
         var sampleId = await _dispatcher.SendAsync<RegisterSampleCommand, Guid>(
             command,
@@ -53,6 +60,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpGet("{sampleId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.View")]
     [ProducesResponseType(typeof(SampleResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
@@ -71,6 +79,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{sampleCode}")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.View")]
     [ProducesResponseType(typeof(SampleResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
@@ -90,6 +99,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.View")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<SampleResponse>),
         StatusCodes.Status200OK)]
@@ -109,6 +119,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpGet("by-assigned-user/{userId}")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.View")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<SampleResponse>),
         StatusCodes.Status200OK)]
@@ -128,6 +139,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPut("{sampleId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -150,6 +162,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/receive")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Receive(
@@ -164,6 +177,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/preparation")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StartPreparation(
@@ -180,6 +194,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/ready-for-analysis")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkReadyForAnalysis(
@@ -196,6 +211,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/analysis/start")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StartAnalysis(
@@ -212,6 +228,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/analysis/complete")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CompleteAnalysis(
@@ -228,6 +245,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/reject")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -244,6 +262,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/assign")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -260,6 +279,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpDelete("{sampleId:guid}/assignment")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Manage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Unassign(
@@ -274,6 +294,7 @@ public sealed class SamplesController : ControllerBase
     }
 
     [HttpPost("{sampleId:guid}/archive")]
+    [Authorize(Policy = "Permission:Laboratory.Samples.Archive")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Archive(
@@ -285,5 +306,16 @@ public sealed class SamplesController : ControllerBase
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
+    }
+
+    private string RequireCurrentUserId()
+    {
+        if (string.IsNullOrWhiteSpace(_currentUser.UserId))
+        {
+            throw new InvalidOperationException(
+                "An authenticated user is required for this operation.");
+        }
+
+        return _currentUser.UserId;
     }
 }

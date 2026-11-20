@@ -7,6 +7,7 @@ using LIMS.Contracts.Instruments;
 using LIMS.Contracts.Instruments.Mappings;
 using LIMS.Contracts.Instruments.Requests;
 using LIMS.Contracts.Instruments.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Instruments.Controllers;
@@ -18,6 +19,7 @@ namespace LIMS.Api.Areas.Instruments.Controllers;
 public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.Create")]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -45,6 +47,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpGet("{instrumentId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.View")]
     [ProducesResponseType(typeof(InstrumentDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
@@ -63,6 +66,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{instrumentCode}")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.View")]
     [ProducesResponseType(typeof(InstrumentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
@@ -82,6 +86,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<InstrumentResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
@@ -97,6 +102,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpGet("by-status/{laboratoryId:guid}/{status}")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<InstrumentResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByStatus(
@@ -124,6 +130,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPut("{instrumentId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -148,6 +155,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/use")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkInUse(
@@ -162,6 +170,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/available")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkAvailable(
@@ -176,6 +185,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/maintenance")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageMaintenance")]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -200,6 +210,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/maintenance/{maintenanceId:guid}/complete")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageMaintenance")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -221,6 +232,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/out-of-service")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -237,6 +249,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/restore-service")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RestoreService(
@@ -251,6 +264,7 @@ public sealed class InstrumentsController(IDispatcher dispatcher) : ControllerBa
     }
 
     [HttpPost("{instrumentId:guid}/retire")]
+    [Authorize(Policy = "Permission:Laboratory.Instruments.ManageStatus")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Retire(

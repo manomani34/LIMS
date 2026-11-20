@@ -7,6 +7,7 @@ using LIMS.Application.Laboratories.Queries;
 using LIMS.Contracts.Common;
 using LIMS.Contracts.Laboratories;
 using LIMS.Contracts.Laboratories.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Laboratories.Controllers;
@@ -24,6 +25,7 @@ public sealed class LaboratoriesController : ControllerBase
         _dispatcher = dispatcher;
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.Create")]
     [HttpPost]
     [ProducesResponseType(typeof(ResourceIdResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -45,6 +47,7 @@ public sealed class LaboratoriesController : ControllerBase
             new ResourceIdResponse(id));
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.View")]
     [HttpGet("{laboratoryId:guid}")]
     [ProducesResponseType(typeof(LaboratoryDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -63,6 +66,7 @@ public sealed class LaboratoriesController : ControllerBase
             : Ok(result.ToDetailsResponse());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.View")]
     [HttpGet("by-code/{code}")]
     [ProducesResponseType(typeof(LaboratoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,6 +85,7 @@ public sealed class LaboratoriesController : ControllerBase
             : Ok(result.ToResponse());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.View")]
     [HttpGet("by-user/{userId}")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<LaboratoryResponse>),
@@ -100,6 +105,7 @@ public sealed class LaboratoriesController : ControllerBase
             .ToArray());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.Edit")]
     [HttpPut("{laboratoryId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -122,6 +128,7 @@ public sealed class LaboratoriesController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.ManageMembers")]
     [HttpPost("{laboratoryId:guid}/members")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -143,6 +150,7 @@ public sealed class LaboratoriesController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.ManageMembers")]
     [HttpDelete("{laboratoryId:guid}/members/{userId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -160,6 +168,7 @@ public sealed class LaboratoriesController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Laboratories.ChangeStatus")]
     [HttpPatch("{laboratoryId:guid}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]

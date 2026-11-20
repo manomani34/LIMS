@@ -1,9 +1,11 @@
+
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Experiments.Commands;
 using LIMS.Application.Experiments.DTOs;
 using LIMS.Application.Experiments.Queries;
 using LIMS.Contracts.Experiments.Requests;
 using LIMS.Contracts.Experiments.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Experiments.Controllers;
@@ -21,6 +23,7 @@ public sealed class ExperimentsController : ControllerBase
         _dispatcher = dispatcher;
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.Create")]
     [HttpPost]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -29,7 +32,8 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] CreateExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await _dispatcher.SendAsync<CreateExperimentCommand, Guid>(new CreateExperimentCommand(
+        var id = await _dispatcher.SendAsync<CreateExperimentCommand, Guid>(
+            new CreateExperimentCommand(
                 request.LaboratoryId,
                 request.SampleId,
                 request.ExperimentCode,
@@ -44,6 +48,7 @@ public sealed class ExperimentsController : ControllerBase
             id);
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.View")]
     [HttpGet("{experimentId:guid}")]
     [ProducesResponseType(typeof(ExperimentDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -63,6 +68,7 @@ public sealed class ExperimentsController : ControllerBase
         return Ok(ToDetailsResponse(result));
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.View")]
     [HttpGet("by-code/{laboratoryId:guid}/{experimentCode}")]
     [ProducesResponseType(typeof(ExperimentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,8 +89,11 @@ public sealed class ExperimentsController : ControllerBase
         return Ok(ToResponse(result));
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.View")]
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ExperimentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<ExperimentResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
         CancellationToken cancellationToken)
@@ -98,8 +107,11 @@ public sealed class ExperimentsController : ControllerBase
         return Ok(result.Select(ToResponse).ToArray());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.View")]
     [HttpGet("by-sample/{sampleId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ExperimentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<ExperimentResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBySample(
         Guid sampleId,
         CancellationToken cancellationToken)
@@ -113,8 +125,11 @@ public sealed class ExperimentsController : ControllerBase
         return Ok(result.Select(ToResponse).ToArray());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.View")]
     [HttpGet("by-assigned-user/{userId}")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ExperimentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<ExperimentResponse>),
+        StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByAssignedUser(
         string userId,
         CancellationToken cancellationToken)
@@ -128,6 +143,7 @@ public sealed class ExperimentsController : ControllerBase
         return Ok(result.Select(ToResponse).ToArray());
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.Edit")]
     [HttpPut("{experimentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -137,7 +153,10 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] UpdateExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<UpdateExperimentInformationCommand, bool>(new UpdateExperimentInformationCommand(
+        var updated = await _dispatcher.SendAsync<
+            UpdateExperimentInformationCommand,
+            bool>(
+            new UpdateExperimentInformationCommand(
                 experimentId,
                 request.Title,
                 request.Description),
@@ -146,6 +165,7 @@ public sealed class ExperimentsController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.Assign")]
     [HttpPost("{experimentId:guid}/assign")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -155,12 +175,16 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] AssignExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<AssignExperimentCommand, bool>(new AssignExperimentCommand(experimentId, request.UserId),
+        var updated = await _dispatcher.SendAsync<
+            AssignExperimentCommand,
+            bool>(
+            new AssignExperimentCommand(experimentId, request.UserId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.Assign")]
     [HttpDelete("{experimentId:guid}/assignment")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -168,12 +192,16 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<UnassignExperimentCommand, bool>(new UnassignExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<
+            UnassignExperimentCommand,
+            bool>(
+            new UnassignExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.ManageStatus")]
     [HttpPost("{experimentId:guid}/start")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -181,12 +209,16 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<StartExperimentCommand, bool>(new StartExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<
+            StartExperimentCommand,
+            bool>(
+            new StartExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.ManageStatus")]
     [HttpPost("{experimentId:guid}/complete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -194,12 +226,16 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<CompleteExperimentCommand, bool>(new CompleteExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<
+            CompleteExperimentCommand,
+            bool>(
+            new CompleteExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.ManageStatus")]
     [HttpPost("{experimentId:guid}/cancel")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -209,12 +245,16 @@ public sealed class ExperimentsController : ControllerBase
         [FromBody] CancelExperimentRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<CancelExperimentCommand, bool>(new CancelExperimentCommand(experimentId, request.Reason),
+        var updated = await _dispatcher.SendAsync<
+            CancelExperimentCommand,
+            bool>(
+            new CancelExperimentCommand(experimentId, request.Reason),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();
     }
 
+    [Authorize(Policy = "Permission:Laboratory.Experiments.Archive")]
     [HttpPost("{experimentId:guid}/archive")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -222,7 +262,10 @@ public sealed class ExperimentsController : ControllerBase
         Guid experimentId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<ArchiveExperimentCommand, bool>(new ArchiveExperimentCommand(experimentId),
+        var updated = await _dispatcher.SendAsync<
+            ArchiveExperimentCommand,
+            bool>(
+            new ArchiveExperimentCommand(experimentId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();

@@ -1,3 +1,4 @@
+
 using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Requests.Commands;
@@ -7,6 +8,7 @@ using LIMS.Contracts.Requests.Mapping;
 using LIMS.Contracts.Requests.Requests;
 using LIMS.Contracts.Requests.Responses;
 using LIMS.Domain.Requests.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIMS.Api.Areas.Requests.Controllers;
@@ -29,6 +31,7 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Create")]
     [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
@@ -58,56 +61,65 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpGet("{requestId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.View")]
     [ProducesResponseType(typeof(SampleRequestResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetSampleRequestByIdQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(new GetSampleRequestByIdQuery(requestId),
+        var result = await _dispatcher.QueryAsync<GetSampleRequestByIdQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(
+            new GetSampleRequestByIdQuery(requestId),
             cancellationToken);
 
         return result is null ? NotFound() : Ok(result.ToResponse());
     }
 
     [HttpGet("by-code/{requestCode}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.View")]
     [ProducesResponseType(typeof(SampleRequestResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(
         string requestCode,
         CancellationToken cancellationToken)
     {
-        var result = await _dispatcher.QueryAsync<GetSampleRequestByCodeQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(new GetSampleRequestByCodeQuery(requestCode),
+        var result = await _dispatcher.QueryAsync<GetSampleRequestByCodeQuery, LIMS.Application.Requests.DTOs.SampleRequestDto?>(
+            new GetSampleRequestByCodeQuery(requestCode),
             cancellationToken);
 
         return result is null ? NotFound() : Ok(result.ToResponse());
     }
 
     [HttpGet("by-requester/{userId}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<SampleRequestResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByRequester(
         string userId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync<GetSampleRequestsByRequesterQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByRequesterQuery(userId),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByRequesterQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(
+            new GetSampleRequestsByRequesterQuery(userId),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<SampleRequestResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByLaboratory(
         Guid laboratoryId,
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync<GetSampleRequestsByLaboratoryQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByLaboratoryQuery(laboratoryId),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByLaboratoryQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(
+            new GetSampleRequestsByLaboratoryQuery(laboratoryId),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
 
     [HttpGet("by-status/{status}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.View")]
     [ProducesResponseType(typeof(IReadOnlyCollection<SampleRequestResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByStatus(
@@ -126,24 +138,28 @@ public sealed class SampleRequestsController : ControllerBase
                 HttpContext.TraceIdentifier));
         }
 
-        var results = await _dispatcher.QueryAsync<GetSampleRequestsByStatusQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetSampleRequestsByStatusQuery(parsedStatus),
+        var results = await _dispatcher.QueryAsync<GetSampleRequestsByStatusQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(
+            new GetSampleRequestsByStatusQuery(parsedStatus),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
 
     [HttpGet("pending-review")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Review")]
     [ProducesResponseType(typeof(IReadOnlyCollection<SampleRequestResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingReview(
         CancellationToken cancellationToken)
     {
-        var results = await _dispatcher.QueryAsync<GetPendingSampleRequestsQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(new GetPendingSampleRequestsQuery(),
+        var results = await _dispatcher.QueryAsync<GetPendingSampleRequestsQuery, IReadOnlyCollection<LIMS.Application.Requests.DTOs.SampleRequestDto>>(
+            new GetPendingSampleRequestsQuery(),
             cancellationToken);
 
         return Ok(results.Select(x => x.ToResponse()).ToArray());
     }
 
     [HttpPut("{requestId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
@@ -170,13 +186,15 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/submit")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Submit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Submit(
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<SubmitSampleRequestCommand, bool>(new SubmitSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<SubmitSampleRequestCommand, bool>(
+            new SubmitSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId()),
             cancellationToken);
@@ -185,13 +203,15 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/start-review")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> StartReview(
         Guid requestId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<StartSampleRequestReviewCommand, bool>(new StartSampleRequestReviewCommand(
+        var updated = await _dispatcher.SendAsync<StartSampleRequestReviewCommand, bool>(
+            new StartSampleRequestReviewCommand(
                 requestId,
                 RequireCurrentUserId()),
             cancellationToken);
@@ -200,6 +220,7 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/approve")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Approve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Approve(
@@ -207,7 +228,8 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] ApproveSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<ApproveSampleRequestCommand, bool>(new ApproveSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<ApproveSampleRequestCommand, bool>(
+            new ApproveSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.LaboratoryId,
@@ -218,6 +240,7 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/reject")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Reject")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Reject(
@@ -225,7 +248,8 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] RejectSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<RejectSampleRequestCommand, bool>(new RejectSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<RejectSampleRequestCommand, bool>(
+            new RejectSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.Reason),
@@ -235,6 +259,7 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/cancel")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Cancel")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Cancel(
@@ -242,7 +267,8 @@ public sealed class SampleRequestsController : ControllerBase
         [FromBody] CancelSampleRequestRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<CancelSampleRequestCommand, bool>(new CancelSampleRequestCommand(
+        var updated = await _dispatcher.SendAsync<CancelSampleRequestCommand, bool>(
+            new CancelSampleRequestCommand(
                 requestId,
                 RequireCurrentUserId(),
                 request.Reason),
@@ -252,6 +278,7 @@ public sealed class SampleRequestsController : ControllerBase
     }
 
     [HttpPost("{requestId:guid}/fulfill")]
+    [Authorize(Policy = "Permission:Laboratory.SampleRequests.Fulfill")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Fulfill(
@@ -259,7 +286,8 @@ public sealed class SampleRequestsController : ControllerBase
         [FromQuery] Guid sampleId,
         CancellationToken cancellationToken)
     {
-        var updated = await _dispatcher.SendAsync<FulfillSampleRequestCommand, bool>(new FulfillSampleRequestCommand(requestId, sampleId),
+        var updated = await _dispatcher.SendAsync<FulfillSampleRequestCommand, bool>(
+            new FulfillSampleRequestCommand(requestId, sampleId),
             cancellationToken);
 
         return updated ? NoContent() : NotFound();

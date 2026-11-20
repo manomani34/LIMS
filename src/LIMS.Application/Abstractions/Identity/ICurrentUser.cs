@@ -1,3 +1,4 @@
+
 namespace LIMS.Application.Abstractions.Identity;
 
 public interface ICurrentUser
@@ -11,4 +12,6 @@ public interface ICurrentUser
     bool IsAuthenticated { get; }
 
     IReadOnlyCollection<string> Roles { get; }
+
+    IReadOnlyCollection<string> Permissions { get; }
 }

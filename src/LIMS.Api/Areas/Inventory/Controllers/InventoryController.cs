@@ -1,4 +1,6 @@
+
 using LIMS.Api.Exceptions;
+using LIMS.Application.Abstractions.Identity;
 using LIMS.Application.Abstractions.Messaging;
 using LIMS.Application.Inventory.Commands;
 using LIMS.Application.Inventory.DTOs;
@@ -8,8 +10,8 @@ using LIMS.Contracts.Inventory.Enums;
 using LIMS.Contracts.Inventory.Mappings;
 using LIMS.Contracts.Inventory.Requests;
 using LIMS.Contracts.Inventory.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LIMS.Api.Areas.Inventory.Controllers;
 
@@ -20,13 +22,18 @@ namespace LIMS.Api.Areas.Inventory.Controllers;
 public sealed class InventoryController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
+    private readonly ICurrentUser _currentUser;
 
-    public InventoryController(IDispatcher dispatcher)
+    public InventoryController(
+        IDispatcher dispatcher,
+        ICurrentUser currentUser)
     {
         _dispatcher = dispatcher;
+        _currentUser = currentUser;
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.Create")]
     [ProducesResponseType(
         typeof(ResourceIdResponse),
         StatusCodes.Status201Created)]
@@ -66,6 +73,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpGet("{inventoryItemId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.View")]
     [ProducesResponseType(
         typeof(InventoryItemDetailsResponse),
         StatusCodes.Status200OK)]
@@ -86,6 +94,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpGet("by-code/{laboratoryId:guid}/{itemCode}")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.View")]
     [ProducesResponseType(
         typeof(InventoryItemResponse),
         StatusCodes.Status200OK)]
@@ -107,6 +116,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpGet("by-laboratory/{laboratoryId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.View")]
     [ProducesResponseType(
         typeof(IReadOnlyCollection<InventoryItemResponse>),
         StatusCodes.Status200OK)]
@@ -145,6 +155,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPut("{inventoryItemId:guid}")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(
         typeof(ValidationErrorResponse),
@@ -182,6 +193,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(
         typeof(ResourceIdResponse),
         StatusCodes.Status201Created)]
@@ -227,6 +239,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/consume")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(
         typeof(ValidationErrorResponse),
@@ -257,6 +270,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/adjust")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(
         typeof(ValidationErrorResponse),
@@ -287,6 +301,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/quarantine")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -307,6 +322,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/release")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -327,6 +343,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/lots/dispose")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.ManageLots")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(
         typeof(ValidationErrorResponse),
@@ -355,6 +372,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/deactivate")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -374,6 +392,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/reactivate")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -393,6 +412,7 @@ public sealed class InventoryController : ControllerBase
     }
 
     [HttpPost("{inventoryItemId:guid}/discontinue")]
+    [Authorize(Policy = "Permission:Laboratory.Inventory.Edit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(
@@ -413,7 +433,7 @@ public sealed class InventoryController : ControllerBase
 
     private string GetCurrentUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        return _currentUser.UserId
             ?? throw new AuthenticatedUserIdUnavailableException();
     }
 }
